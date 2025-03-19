@@ -126,6 +126,7 @@ const App = () => {
   const [currentMonth, setCurrentMonth] = useState(0); // Start with January (index 0)
   const [calendar, setCalendar] = useState(calendarData); // Store entire calendar state
   const [todayDate, setTodayDate] = useState(null); // For tracking today's date
+  const [autoRosterTriggered, setAutoRosterTriggered] = useState(false); // Track if Auto Roster was triggered
 
   // Get the current date
   const currentDate = new Date();
@@ -180,6 +181,7 @@ const App = () => {
   // Reset the calendar to its original unassigned state
   const resetCalendar = () => {
     setCalendar(get2025Calendar()); // Reset the calendar state to its initial state
+    setAutoRosterTriggered(false); // Reset auto roster trigger
   };
 
   // Function to save the calendar as PNG
@@ -193,8 +195,8 @@ const App = () => {
     });
   };
 
-  // Auto-roster therapists after calendar reset or when month changes
-  useEffect(() => {
+  // Auto-roster therapists when the button is clicked
+  const autoRoster = () => {
     const updatedCalendar = [...calendar]; // Copy the calendar state to avoid mutating it directly
     
     updatedCalendar[currentMonth].forEach(day => {
@@ -205,7 +207,8 @@ const App = () => {
     });
 
     setCalendar(updatedCalendar); // Update the calendar with auto-assignments
-  }, [currentMonth]);
+    setAutoRosterTriggered(true); // Mark that auto-roster has been triggered
+  };
 
   return (
     <DndProvider backend={HTML5Backend}>
@@ -224,6 +227,9 @@ const App = () => {
             <button onClick={() => setCurrentMonth((prev) => (prev === 11 ? 0 : prev + 1))} style={{ marginLeft: '10px' }}>→</button>
             <button onClick={goToToday} style={{ marginLeft: '20px' }}>Today</button>
             <button onClick={resetCalendar} style={{ marginLeft: '20px' }}>Reset Calendar</button>
+            <button onClick={autoRoster} style={{ marginLeft: '20px' }} disabled={autoRosterTriggered}>
+              {autoRosterTriggered ? "Auto Roster Applied" : "Auto Roster"}
+            </button>
             <button onClick={saveAsPNG} style={{ marginLeft: '20px' }}>Save as PNG</button>
           </div>
 
@@ -242,6 +248,7 @@ const App = () => {
 };
 
 export default App;
+
 
 
 
