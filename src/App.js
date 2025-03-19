@@ -198,21 +198,29 @@ const App = () => {
     });
   };
 
-// Auto-roster therapists when the button is clicked
-const autoRoster = () => {
-  const updatedCalendar = [...calendar]; // Copy the calendar state to avoid mutating it directly
-  
-  updatedCalendar[currentMonth].forEach(day => {
-    const isWeekend = day.date.getDay() === 0 || day.date.getDay() === 6; // 0 = Sunday, 6 = Saturday
-    if (day.therapists.length === 0 && !blockedDays.includes(day.dayKey) && !isWeekend) {
-      const therapistToAssign = therapists[day.date.getDate() % therapists.length]; // Simple round-robin assignment
-      day.therapists.push(therapistToAssign);
-    }
-  });
+  // Auto-roster therapists when the button is clicked
+  const autoRoster = () => {
+    setCalendar((prevCalendar) => {
+      const updatedCalendar = [...prevCalendar];
 
-  setCalendar(updatedCalendar); // Update the calendar with auto-assignments
-  setAutoRosterTriggered(true); // Mark that auto-roster has been triggered
-};
+      // Shuffle therapists for better distribution
+      const shuffledTherapists = [...therapists].sort(() => Math.random() - 0.5);
+      let therapistIndex = 0;
+
+      updatedCalendar[currentMonth] = updatedCalendar[currentMonth].map((day) => {
+        const isWeekend = day.date.getDay() === 0 || day.date.getDay() === 6;
+        if (day.therapists.length === 0 && !blockedDays.includes(day.dayKey) && !isWeekend) {
+          day.therapists.push(shuffledTherapists[therapistIndex]);
+          therapistIndex = (therapistIndex + 1) % shuffledTherapists.length;
+        }
+        return day;
+      });
+
+      return updatedCalendar;
+    });
+
+    setAutoRosterTriggered(true);
+  };
 
   return (
     <DndProvider backend={HTML5Backend}>
@@ -227,22 +235,112 @@ const autoRoster = () => {
         <div>
           <h2>2025 Calendar - {calendar[currentMonth][0].date.toLocaleString('default', { month: 'long' })}</h2>
           <div>
-            <button onClick={() => setCurrentMonth((prev) => (prev === 0 ? 11 : prev - 1))} style={{ marginRight: '10px' }}>←</button>
-            <button onClick={() => setCurrentMonth((prev) => (prev === 11 ? 0 : prev + 1))} style={{ marginLeft: '10px' }}>→</button>
-            <button onClick={goToToday} style={{ marginLeft: '20px' }}>Today</button>
-            <button onClick={resetCalendar} style={{ marginLeft: '20px' }}>Reset Calendar</button>
-            <button onClick={autoRoster} style={{ marginLeft: '20px' }} disabled={autoRosterTriggered}>
-              {autoRosterTriggered ? "Auto Roster Applied" : "Auto Roster"}
-            </button>
-            <button onClick={saveAsPNG} style={{ marginLeft: '20px' }}>Save as PNG</button>
+            <div style={{ marginBottom: '10px' }}>
+              <button
+                onClick={() => setCurrentMonth((prev) => (prev === 0 ? 11 : prev - 1))}
+                style={{
+                  padding: '8px 16px',
+                  background: '#f4f4f7',
+                  color: '#333',
+                  border: '1px solid #ddd',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: '500',
+                  transition: 'background 0.2s',
+                }}
+              >
+                ← Previous
+              </button>
+              <button
+                onClick={() => setCurrentMonth((prev) => (prev === 11 ? 0 : prev + 1))}
+                style={{
+                  padding: '8px 16px',
+                  background: '#f4f4f7',
+                  color: '#333',
+                  border: '1px solid #ddd',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: '500',
+                  transition: 'background 0.2s',
+                  marginLeft: '10px',
+                }}
+              >
+                Next →
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                onClick={goToToday}
+                style={{
+                  padding: '8px 16px',
+                  background: '#f4f4f7',
+                  color: '#333',
+                  border: '1px solid #ddd',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: '500',
+                  transition: 'background 0.2s',
+                }}
+              >
+                Today
+              </button>
+              <button
+                onClick={resetCalendar}
+                style={{
+                  padding: '8px 16px',
+                  background: '#f4f4f7',
+                  color: '#333',
+                  border: '1px solid #ddd',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: '500',
+                  transition: 'background 0.2s',
+                }}
+              >
+                Reset Calendar
+              </button>
+              <button
+                onClick={autoRoster}
+                style={{
+                  padding: '8px 16px',
+                  background: '#f4f4f7',
+                  color: '#333',
+                  border: '1px solid #ddd',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: '500',
+                  transition: 'background 0.2s',
+                  disabled: autoRosterTriggered,
+                }}
+                disabled={autoRosterTriggered}
+              >
+                {autoRosterTriggered ? "Auto Roster Applied" : "Auto Roster"}
+              </button>
+              <button
+                onClick={saveAsPNG}
+                style={{
+                  padding: '8px 16px',
+                  background: '#f4f4f7',
+                  color: '#333',
+                  border: '1px solid #ddd',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: '500',
+                  transition: 'background 0.2s',
+                }}
+              >
+                Save as PNG
+              </button>
+            </div>
           </div>
 
-          <div id="calendar-container">
-            <Calendar 
-              monthDays={calendar[currentMonth]} 
-              moveTherapist={moveTherapist} 
-              removeTherapist={removeTherapist} 
-              todayDate={todayDate} 
+          <div id="calendar-container" style={{ marginTop: '20px' }}>
+            <Calendar
+              monthDays={calendar[currentMonth]}
+              moveTherapist={moveTherapist}
+              removeTherapist={removeTherapist}
+              todayDate={todayDate}
             />
           </div>
         </div>
@@ -252,17 +350,6 @@ const autoRoster = () => {
 };
 
 export default App;
-
-
-
-
-
-
-
-
-
-
-
 
 
 
