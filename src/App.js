@@ -365,14 +365,14 @@ const App = () => {
               onClick={autoRoster}
               style={{
                 padding: '8px 16px',
-                background: '#003049', // Pastel green
-                color: '#fff',
-                border: 'none',
+                background: '#f4f4f7', // Pastel green
+                color: '#333',
+                border: '1px solid #ddd',
                 borderRadius: '8px',
                 cursor: 'pointer',
-                fontWeight: 'bold',
-                transition: 'background 0.3s',
-                marginTop: '10px',
+                fontWeight: '500',
+                transition: 'background 0.2s',
+                marginTop: '20px',
               }}
               disabled={autoRosterTriggered}
             >
