@@ -59,13 +59,12 @@ const Therapist = ({ name }) => {
 };
 
 // Calendar Day (Drop Zone)
-const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked, monthIndex }) => {
+const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked }) => {
   const [, drop] = useDrop(() => ({
     accept: 'THERAPIST',
     drop: (item) => {
       if (!isBlocked) {
-        console.log(`Dropped therapist: ${item.name} on ${day.dayKey} in month ${monthIndex}`);
-        moveTherapist(item.name, day.dayKey, monthIndex); // Use dayKey as the unique identifier
+        moveTherapist(item.name, day.dayKey); // Only move if the day is not blocked
       }
     }
   }));
@@ -78,8 +77,7 @@ const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked, 
         padding: '10px',
         minHeight: '80px',
         position: 'relative',
-        backgroundColor: isBlocked ? 'lightgrey' : isToday ? '#FFEB3B' : 'white', // Grey out blocked days
-        cursor: isBlocked ? 'not-allowed' : 'pointer' // Disable interaction for blocked days
+        backgroundColor: isToday ? '#FFEB3B' : isBlocked ? '#D3D3D3' : 'white' // Highlight today's date or blocked days
       }}
     >
       <strong>{day.date.toDateString()}</strong>
@@ -88,7 +86,7 @@ const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked, 
           <div key={idx} style={{ padding: '5px', backgroundColor: 'lightgreen' }}>
             {therapist}
             <button 
-              onClick={() => removeTherapist(therapist, day.dayKey, monthIndex)} 
+              onClick={() => removeTherapist(therapist, day.dayKey)} 
               style={{ marginLeft: '10px', color: 'red', cursor: 'pointer' }}
             >
               Remove
@@ -103,21 +101,20 @@ const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked, 
 };
 
 // Calendar Grid Component
-const Calendar = ({ monthDays, moveTherapist, removeTherapist, todayDate, monthIndex }) => {
+const Calendar = ({ monthDays, moveTherapist, removeTherapist, todayDate }) => {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '10px', marginTop: '20px' }}>
-      {monthDays.map((day, index) => {
+      {monthDays.map((day) => {
         const isToday = todayDate && day.date.toDateString() === todayDate.toDateString();
         const isBlocked = blockedDays.includes(day.dayKey); // Check if the day is blocked
         return (
           <CalendarDay 
-            key={day.dayKey} // Use the unique dayKey
-            day={day} 
+            key={day.dayKey}
+            day={day}
             moveTherapist={moveTherapist} 
             removeTherapist={removeTherapist} 
             isToday={isToday} 
-            isBlocked={isBlocked} // Pass blocked status
-            monthIndex={monthIndex} 
+            isBlocked={isBlocked} // Pass isBlocked as a prop
           />
         );
       })}
@@ -129,7 +126,6 @@ const App = () => {
   const [currentMonth, setCurrentMonth] = useState(0); // Start with January (index 0)
   const [calendar, setCalendar] = useState(calendarData); // Store entire calendar state
   const [todayDate, setTodayDate] = useState(null); // For tracking today's date
-  const calendarRef = useRef(); // Reference to the calendar container
 
   // Get the current date
   const currentDate = new Date();
@@ -144,13 +140,12 @@ const App = () => {
   };
 
   // Handle moving a therapist into a calendar day
-  const moveTherapist = (name, dayKey, monthIndex) => {
-    console.log(`Moving therapist: ${name} to day ${dayKey} in month ${monthIndex}`);
+  const moveTherapist = (name, dayKey) => {
     setCalendar(prevCalendar => {
       const updatedCalendar = prevCalendar.map((month, index) => {
-        if (index === monthIndex) {
+        if (index === currentMonth) {
           return month.map(day => {
-            if (day.dayKey === dayKey) {
+            if (day.dayKey === dayKey && !blockedDays.includes(dayKey)) {
               if (!day.therapists.includes(name)) {
                 return { ...day, therapists: [...day.therapists, name] };
               }
@@ -165,11 +160,10 @@ const App = () => {
   };
 
   // Handle removing a therapist from a calendar day
-  const removeTherapist = (name, dayKey, monthIndex) => {
-    console.log(`Removing therapist: ${name} from day ${dayKey} in month ${monthIndex}`);
+  const removeTherapist = (name, dayKey) => {
     setCalendar(prevCalendar => {
       const updatedCalendar = prevCalendar.map((month, index) => {
-        if (index === monthIndex) {
+        if (index === currentMonth) {
           return month.map(day => {
             if (day.dayKey === dayKey) {
               return { ...day, therapists: day.therapists.filter(therapist => therapist !== name) };
@@ -183,34 +177,14 @@ const App = () => {
     });
   };
 
-  // Function to generate the auto roster using Round Robin
-  const generateAutoRoster = () => {
-    let newCalendar = [...calendar]; // Clone the calendar state
-    let therapistIndex = 0; // Start from the first therapist
-
-    // Generate auto roster for each month
-    newCalendar = newCalendar.map((month, monthIndex) => {
-      return month.map(day => {
-        const dayOfWeek = day.date.getDay(); // Get the day of the week (0-6)
-        if (dayOfWeek === 0 || dayOfWeek === 6 || blockedDays.includes(day.dayKey)) {
-          return day; // Skip weekends and blocked days
-        }
-
-        // If the day is empty, assign a therapist in round-robin fashion
-        if (day.therapists.length === 0) {
-          let selectedTherapist = therapists[therapistIndex];
-          day.therapists.push(selectedTherapist); // Assign therapist
-          therapistIndex = (therapistIndex + 1) % therapists.length; // Move to the next therapist in the list
-        }
-        return day;
-      });
-    });
-    setCalendar(newCalendar); // Update the state with the new calendar
+  // Reset the calendar to its original unassigned state
+  const resetCalendar = () => {
+    setCalendar(calendarData); // Reset the calendar state to its initial state
   };
 
   // Function to save the calendar as PNG
   const saveAsPNG = () => {
-    html2canvas(calendarRef.current).then((canvas) => {
+    html2canvas(document.querySelector("#calendar-container")).then((canvas) => {
       const imgData = canvas.toDataURL("image/png");
       const link = document.createElement('a');
       link.href = imgData;
@@ -218,10 +192,6 @@ const App = () => {
       link.click(); // Trigger the download
     });
   };
-
-  useEffect(() => {
-    console.log("Updated calendar state:", calendar);
-  }, [calendar]);
 
   return (
     <DndProvider backend={HTML5Backend}>
@@ -233,18 +203,24 @@ const App = () => {
           ))}
         </div>
 
-        <div style={{ overflowX: 'auto', width: '70%' }} ref={calendarRef}>
-          <button onClick={goToToday} style={{ marginBottom: '20px' }}>Go to Today</button>
-          <button onClick={generateAutoRoster} style={{ marginBottom: '20px' }}>Generate Auto-Roster</button>
-          <button onClick={saveAsPNG} style={{ marginBottom: '20px' }}>Save Calendar as PNG</button>
-          <h2>{calendar[currentMonth][0].date.toLocaleString('default', { month: 'long' })} 2025</h2>
-          <Calendar 
-            monthDays={calendar[currentMonth]} 
-            moveTherapist={moveTherapist} 
-            removeTherapist={removeTherapist} 
-            todayDate={todayDate} 
-            monthIndex={currentMonth}
-          />
+        <div>
+          <h2>2025 Calendar - {calendar[currentMonth][0].date.toLocaleString('default', { month: 'long' })}</h2>
+          <div>
+            <button onClick={() => setCurrentMonth((prev) => (prev === 0 ? 11 : prev - 1))} style={{ marginRight: '10px' }}>←</button>
+            <button onClick={() => setCurrentMonth((prev) => (prev === 11 ? 0 : prev + 1))} style={{ marginLeft: '10px' }}>→</button>
+            <button onClick={goToToday} style={{ marginLeft: '20px' }}>Today</button>
+            <button onClick={resetCalendar} style={{ marginLeft: '20px' }}>Reset Calendar</button>
+            <button onClick={saveAsPNG} style={{ marginLeft: '20px' }}>Save as PNG</button>
+          </div>
+
+          <div id="calendar-container">
+            <Calendar 
+              monthDays={calendar[currentMonth]} 
+              moveTherapist={moveTherapist} 
+              removeTherapist={removeTherapist} 
+              todayDate={todayDate} 
+            />
+          </div>
         </div>
       </div>
     </DndProvider>
@@ -252,6 +228,7 @@ const App = () => {
 };
 
 export default App;
+
 
 
 
