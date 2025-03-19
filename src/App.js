@@ -63,10 +63,7 @@ const Therapist = ({ name }) => {
         fontWeight: 'bold',
         color: '#333',
         boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
-        transition: 'background-color 0.2s',
       }}
-      onMouseOver={(e) => e.target.style.backgroundColor = '#81C784'} // Hover effect
-      onMouseOut={(e) => e.target.style.backgroundColor = '#A8E6CF'} // Revert hover effect
     >
       {name}
     </div>
@@ -97,18 +94,7 @@ const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked }
         position: 'relative',
         backgroundColor: isToday ? '#FFEB3B' : finalBlockedStatus ? '#D3D3D3' : 'white',
         borderRadius: '10px', // Rounded corners
-        transition: 'background-color 0.2s',
         boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
-      }}
-      onMouseOver={(e) => {
-        if (!finalBlockedStatus) {
-          e.target.style.backgroundColor = '#F1F1F1'; // Light hover effect
-        }
-      }}
-      onMouseOut={(e) => {
-        if (!finalBlockedStatus) {
-          e.target.style.backgroundColor = 'white'; // Revert hover effect
-        }
       }}
     >
       <strong>{day.date.toDateString()}</strong>
@@ -315,57 +301,74 @@ const App = () => {
               onClick={resetCalendar}
               style={{
                 padding: '8px 16px',
-                background: '#f4f4f7',
-                color: '#333',
-                border: '1px solid #ddd',
+                background: '#ff6b6b',
+                color: 'white',
+                border: 'none',
                 borderRadius: '8px',
                 cursor: 'pointer',
                 fontWeight: '500',
-                transition: 'background 0.2s',
+                marginBottom: '10px',
               }}
             >
               Reset Calendar
             </button>
+
+            <button
+              onClick={goToToday}
+              style={{
+                padding: '8px 16px',
+                background: '#FFD700',
+                color: 'black',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: '500',
+                marginBottom: '10px',
+              }}
+            >
+              Go to Today
+            </button>
+
             <button
               onClick={autoRoster}
               style={{
                 padding: '8px 16px',
-                background: '#f4f4f7',
-                color: '#333',
-                border: '1px solid #ddd',
+                background: '#A8E6CF',
+                color: 'black',
+                border: 'none',
                 borderRadius: '8px',
                 cursor: 'pointer',
                 fontWeight: '500',
-                transition: 'background 0.2s',
+                marginBottom: '10px',
               }}
-              disabled={autoRosterTriggered}
             >
-              {autoRosterTriggered ? 'Rostered' : 'Auto Roster'}
+              Auto Roster
             </button>
+
             <button
               onClick={saveAsPNG}
               style={{
                 padding: '8px 16px',
-                background: '#f4f4f7',
-                color: '#333',
-                border: '1px solid #ddd',
+                background: '#f0f0f0',
+                color: 'black',
+                border: 'none',
                 borderRadius: '8px',
                 cursor: 'pointer',
                 fontWeight: '500',
-                transition: 'background 0.2s',
+                marginBottom: '10px',
               }}
             >
               Save as PNG
             </button>
+          </div>
 
-            <div id="calendar-container">
-              <Calendar
-                monthDays={calendar[currentMonth]}
-                moveTherapist={moveTherapist}
-                removeTherapist={removeTherapist}
-                todayDate={todayDate}
-              />
-            </div>
+          <div id="calendar-container">
+            <Calendar
+              monthDays={calendar[currentMonth]}
+              moveTherapist={moveTherapist}
+              removeTherapist={removeTherapist}
+              todayDate={todayDate}
+            />
           </div>
         </div>
       </div>
