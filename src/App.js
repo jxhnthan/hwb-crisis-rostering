@@ -88,13 +88,17 @@ const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked }
     <div
       ref={drop}
       style={{
-        border: '1px solid #ddd',
         padding: '10px',
         minHeight: '80px',
         position: 'relative',
-        backgroundColor: isToday ? '#FFEB3B' : finalBlockedStatus ? '#D3D3D3' : 'white',
-        borderRadius: '10px', // Rounded corners
+        backgroundColor: isToday 
+          ? '#FFEB3B' // Highlight today
+          : finalBlockedStatus 
+          ? '#B0BEC5' // Solid grey for blocked days
+          : 'white', // Normal color for non-blocked days
+        borderRadius: '0px', // Rounded corners
         boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
+        overflow: 'hidden', // Prevent border overflow
       }}
     >
       <strong>{day.date.toDateString()}</strong>
@@ -216,17 +220,44 @@ const App = () => {
     setAutoRosterTriggered(false); // Reset auto roster trigger
   };
 
-  // Function to save the calendar as PNG
   const saveAsPNG = () => {
-    html2canvas(document.querySelector("#calendar-container")).then((canvas) => {
+    // First, ensure all greyed-out days are one solid color (e.g., #D3D3D3)
+    const calendarDays = document.querySelectorAll('.calendar-day');
+  
+    calendarDays.forEach((day) => {
+      const backgroundColor = day.style.backgroundColor;
+      if (backgroundColor === 'rgb(211, 211, 211)') {  // This checks if the day is greyed out
+        day.style.backgroundColor = '#B0C4DE';  // Set to a solid color (e.g., Light Steel Blue)
+      }
+    });
+  
+    // Now capture the screenshot
+    const bodyElement = document.querySelector("body");
+  
+    html2canvas(bodyElement, {
+      ignoreElements: (el) => el.classList.contains("ignore-export"), // Ignore any elements that shouldn't appear in the screenshot (e.g., buttons)
+      backgroundColor: "white", // Ensure transparent background
+      useCORS: true, // Allow cross-origin resource sharing for external images
+      scrollX: 0, // Ensure the whole page is captured starting from the top-left corner
+      scrollY: 0,
+      x: 0,
+      y: 0,
+    }).then((canvas) => {
       const imgData = canvas.toDataURL("image/png");
       const link = document.createElement('a');
       link.href = imgData;
-      link.download = 'calendar.png'; // Set the name of the file
+      link.download = 'webpage_screenshot.png'; // Set the default filename for download
       link.click(); // Trigger the download
+  
+      // Reset the greyed-out days back to their original color (optional)
+      calendarDays.forEach((day) => {
+        if (day.style.backgroundColor === '#B0C4DE') {
+          day.style.backgroundColor = '#D3D3D3'; // Reset to original grey color
+        }
+      });
     });
   };
-
+  
   // Auto-roster therapists when the button is clicked
   const autoRoster = () => {
     setCalendar((prevCalendar) => {
@@ -301,74 +332,70 @@ const App = () => {
               onClick={resetCalendar}
               style={{
                 padding: '8px 16px',
-                background: '#ff6b6b',
-                color: 'white',
-                border: 'none',
+                background: '#f4f4f7',
+                color: '#333',
+                border: '1px solid #ddd',
                 borderRadius: '8px',
                 cursor: 'pointer',
                 fontWeight: '500',
-                marginBottom: '10px',
+                transition: 'background 0.2s',
+                marginBottom: '20px',
               }}
             >
               Reset Calendar
             </button>
-
             <button
-              onClick={goToToday}
+              onClick={saveAsPNG}
               style={{
                 padding: '8px 16px',
-                background: '#FFD700',
-                color: 'black',
-                border: 'none',
+                background: '#f4f4f7',
+                color: '#333',
+                border: '1px solid #ddd',
                 borderRadius: '8px',
                 cursor: 'pointer',
                 fontWeight: '500',
-                marginBottom: '10px',
+                transition: 'background 0.2s',
+                marginBottom: '20px',
               }}
             >
-              Go to Today
+              Save as PNG
             </button>
 
             <button
               onClick={autoRoster}
               style={{
                 padding: '8px 16px',
-                background: '#A8E6CF',
-                color: 'black',
+                background: '#A8E6CF', // Pastel green
+                color: '#fff',
                 border: 'none',
                 borderRadius: '8px',
                 cursor: 'pointer',
-                fontWeight: '500',
-                marginBottom: '10px',
+                fontWeight: 'bold',
+                transition: 'background 0.3s',
+                marginTop: '10px',
               }}
+              disabled={autoRosterTriggered}
             >
-              Auto Roster
+              {autoRosterTriggered ? 'Auto Roster Completed' : 'Auto Roster'}
             </button>
 
-            <button
-              onClick={saveAsPNG}
+            <div
+              id="calendar-container"
               style={{
-                padding: '8px 16px',
-                background: '#f0f0f0',
-                color: 'black',
-                border: 'none',
+                marginTop: '20px',
+                padding: '20px',
+                backgroundColor: '#f4f4f7',
                 borderRadius: '8px',
-                cursor: 'pointer',
-                fontWeight: '500',
-                marginBottom: '10px',
+                boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)',
               }}
             >
-              Save as PNG
-            </button>
-          </div>
-
-          <div id="calendar-container">
-            <Calendar
-              monthDays={calendar[currentMonth]}
-              moveTherapist={moveTherapist}
-              removeTherapist={removeTherapist}
-              todayDate={todayDate}
-            />
+              <Calendar
+                monthDays={calendar[currentMonth]}
+                moveTherapist={moveTherapist}
+                removeTherapist={removeTherapist}
+                todayDate={todayDate}
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -377,6 +404,7 @@ const App = () => {
 };
 
 export default App;
+
 
 
 
