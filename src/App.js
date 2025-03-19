@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import html2canvas from 'html2canvas';
+import html2canvas from 'html2canvas'; // Import html2canvas
 
 // Define therapist names
 const therapists = [
@@ -10,20 +10,12 @@ const therapists = [
   "Andrew Lim", "Janice Leong", "Oliver Tan"
 ];
 
-// Define blocked days for 2025 in Singapore Timezone (SGT)
+// Blocked days (in YYYY-MM-DD format)
 const blockedDays = [
-  '2025-01-01', // New Year's Day
-  '2025-01-29', // Chinese New Year
-  '2025-01-30',
-  '2025-03-31', // Hari Raya Puasa
-  '2025-04-18', // Good Friday
-  '2025-05-01', // Labour Day
-  '2025-05-12', // Vesak Day
-  '2025-06-07', // Hari Raya Haji
-  '2025-08-09', // National Day
-  '2025-10-20', // Deepavali
-  '2025-12-25', // Christmas Day
-  '2025-10-21', // NUS Well-Being Day
+  "2025-01-01", "2025-01-29", "2025-01-30", // New Year’s Day, Chinese New Year
+  "2025-03-31", "2025-04-18", "2025-05-01", // Hari Raya Puasa, Good Friday, Labour Day
+  "2025-05-12", "2025-06-07", "2025-08-09", // Vesak Day, Hari Raya Haji, National Day
+  "2025-10-20", "2025-12-25"  // Deepavali, Christmas Day
 ];
 
 // Helper function to get the dates for each month in 2025 with unique keys
@@ -37,7 +29,7 @@ const get2025Calendar = () => {
   const calendar = months.map(([days, month], monthIndex) => {
     const monthDays = Array.from({ length: days }, (_, dayIndex) => {
       const date = new Date(2025, monthIndex, dayIndex + 1);
-      const dayKey = date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+      const dayKey = `${2025}-${monthIndex + 1}-${dayIndex + 1}`; // Unique day identifier (YYYY-MM-DD)
       return {
         date,
         dayKey, // Use dayKey as the unique identifier
@@ -67,7 +59,7 @@ const Therapist = ({ name }) => {
 };
 
 // Calendar Day (Drop Zone)
-const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, monthIndex, isBlocked }) => {
+const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked, monthIndex }) => {
   const [, drop] = useDrop(() => ({
     accept: 'THERAPIST',
     drop: (item) => {
@@ -86,7 +78,8 @@ const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, monthIndex,
         padding: '10px',
         minHeight: '80px',
         position: 'relative',
-        backgroundColor: isBlocked ? '#d3d3d3' : isToday ? '#FFEB3B' : 'white', // Blocked days greyed out
+        backgroundColor: isBlocked ? 'lightgrey' : isToday ? '#FFEB3B' : 'white', // Grey out blocked days
+        cursor: isBlocked ? 'not-allowed' : 'pointer' // Disable interaction for blocked days
       }}
     >
       <strong>{day.date.toDateString()}</strong>
@@ -115,7 +108,7 @@ const Calendar = ({ monthDays, moveTherapist, removeTherapist, todayDate, monthI
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '10px', marginTop: '20px' }}>
       {monthDays.map((day, index) => {
         const isToday = todayDate && day.date.toDateString() === todayDate.toDateString();
-        const isBlocked = blockedDays.includes(day.dayKey); // Check if the day is in blockedDays
+        const isBlocked = blockedDays.includes(day.dayKey); // Check if the day is blocked
         return (
           <CalendarDay 
             key={day.dayKey} // Use the unique dayKey
@@ -123,8 +116,8 @@ const Calendar = ({ monthDays, moveTherapist, removeTherapist, todayDate, monthI
             moveTherapist={moveTherapist} 
             removeTherapist={removeTherapist} 
             isToday={isToday} 
+            isBlocked={isBlocked} // Pass blocked status
             monthIndex={monthIndex} 
-            isBlocked={isBlocked} // Check if the day is blocked
           />
         );
       })}
@@ -138,28 +131,16 @@ const App = () => {
   const [todayDate, setTodayDate] = useState(null); // For tracking today's date
   const calendarRef = useRef(); // Reference to the calendar container
 
-  // Get the current date (Singapore time)
+  // Get the current date
   const currentDate = new Date();
-  const singaporeTime = new Date(currentDate.toLocaleString("en-US", { timeZone: "Asia/Singapore" }));
-
-  const currentDay = singaporeTime.getDate();
-  const currentMonthIndex = singaporeTime.getMonth();
-  const currentYear = singaporeTime.getFullYear();
-
-  // Normalize date comparison by setting the time to 00:00:00
-  const normalizeDate = (date) => {
-    const newDate = new Date(date);
-    newDate.setHours(0, 0, 0, 0); // Set to midnight
-    return newDate;
-  };
-
-  // Normalize blocked days to avoid time discrepancies
-  const normalizedBlockedDays = blockedDays.map(day => normalizeDate(new Date(day)));
+  const currentDay = currentDate.getDate();
+  const currentMonthIndex = currentDate.getMonth();
+  const currentYear = currentDate.getFullYear();
 
   // Set today's date when "Today" button is clicked
   const goToToday = () => {
     setCurrentMonth(currentMonthIndex); // Set to current month
-    setTodayDate(singaporeTime); // Set today's date in Singapore timezone
+    setTodayDate(new Date(currentYear, currentMonthIndex, currentDay)); // Set today's date
   };
 
   // Handle moving a therapist into a calendar day
@@ -202,7 +183,7 @@ const App = () => {
     });
   };
 
-  // Function to generate the auto-roster using Round Robin
+  // Function to generate the auto roster using Round Robin
   const generateAutoRoster = () => {
     let newCalendar = [...calendar]; // Clone the calendar state
     let therapistIndex = 0; // Start from the first therapist
@@ -211,30 +192,20 @@ const App = () => {
     newCalendar = newCalendar.map((month, monthIndex) => {
       return month.map(day => {
         const dayOfWeek = day.date.getDay(); // Get the day of the week (0-6)
-        if (dayOfWeek === 0 || dayOfWeek === 6) {
-          return day; // Skip weekends (Saturday: 6, Sunday: 0)
+        if (dayOfWeek === 0 || dayOfWeek === 6 || blockedDays.includes(day.dayKey)) {
+          return day; // Skip weekends and blocked days
         }
 
-        // If the day is empty and not blocked, assign a therapist in round-robin fashion
-        if (day.therapists.length === 0 && !normalizedBlockedDays.includes(normalizeDate(day.date))) {
+        // If the day is empty, assign a therapist in round-robin fashion
+        if (day.therapists.length === 0) {
           let selectedTherapist = therapists[therapistIndex];
-          day.therapists.push(selectedTherapist);
-
-          // Move to the next therapist in the list (round-robin)
-          therapistIndex = (therapistIndex + 1) % therapists.length;
+          day.therapists.push(selectedTherapist); // Assign therapist
+          therapistIndex = (therapistIndex + 1) % therapists.length; // Move to the next therapist in the list
         }
-
         return day;
       });
     });
-
-    setCalendar(newCalendar); // Update the calendar state
-  };
-
-  // Reset the calendar to its original unassigned state
-  const resetCalendar = () => {
-    const initialCalendar = get2025Calendar(); // Get the original empty calendar
-    setCalendar(initialCalendar); // Reset the calendar state
+    setCalendar(newCalendar); // Update the state with the new calendar
   };
 
   // Function to save the calendar as PNG
@@ -262,25 +233,18 @@ const App = () => {
           ))}
         </div>
 
-        <div>
-          <h2>2025 Calendar - {calendar[currentMonth][0].date.toLocaleString('default', { month: 'long' })}</h2>
-          <div>
-            <button onClick={() => setCurrentMonth((prev) => (prev === 0 ? 11 : prev - 1))} style={{ marginRight: '10px', cursor: 'pointer' }}>←</button>
-            <button onClick={() => setCurrentMonth((prev) => (prev === 11 ? 0 : prev + 1))} style={{ cursor: 'pointer' }}>→</button>
-            <button onClick={goToToday} style={{ marginLeft: '20px', cursor: 'pointer' }}>Today</button>
-            <button onClick={saveAsPNG} style={{ marginLeft: '20px', cursor: 'pointer' }}>Save as .PNG</button>
-            <button onClick={generateAutoRoster} style={{ marginLeft: '20px', cursor: 'pointer' }}>Generate Auto-Roster</button>
-            <button onClick={resetCalendar} style={{ marginLeft: '20px', cursor: 'pointer' }}>Reset Calendar</button>
-          </div>
-          <div ref={calendarRef}>
-            <Calendar 
-              monthDays={calendar[currentMonth]} 
-              moveTherapist={moveTherapist} 
-              removeTherapist={removeTherapist} 
-              todayDate={todayDate} 
-              monthIndex={currentMonth} 
-            />
-          </div>
+        <div style={{ overflowX: 'auto', width: '70%' }} ref={calendarRef}>
+          <button onClick={goToToday} style={{ marginBottom: '20px' }}>Go to Today</button>
+          <button onClick={generateAutoRoster} style={{ marginBottom: '20px' }}>Generate Auto-Roster</button>
+          <button onClick={saveAsPNG} style={{ marginBottom: '20px' }}>Save Calendar as PNG</button>
+          <h2>{calendar[currentMonth][0].date.toLocaleString('default', { month: 'long' })} 2025</h2>
+          <Calendar 
+            monthDays={calendar[currentMonth]} 
+            moveTherapist={moveTherapist} 
+            removeTherapist={removeTherapist} 
+            todayDate={todayDate} 
+            monthIndex={currentMonth}
+          />
         </div>
       </div>
     </DndProvider>
@@ -288,6 +252,7 @@ const App = () => {
 };
 
 export default App;
+
 
 
 
