@@ -12,9 +12,9 @@ const therapists = [
 
 // Blocked days (in YYYY-MM-DD format)
 const blockedDays = [
-  "2025-01-01", "2025-01-29", "2025-01-30", // New Year’s Day, Chinese New Year
-  "2025-03-31", "2025-04-18", "2025-05-01", // Hari Raya Puasa, Good Friday, Labour Day
-  "2025-05-12", "2025-06-07", "2025-08-09", // Vesak Day, Hari Raya Haji, National Day
+  "2025-1-01", "2025-1-29", "2025-1-30", // New Year’s Day, Chinese New Year
+  "2025-3-31", "2025-4-18", "2025-5-01", // Hari Raya Puasa, Good Friday, Labour Day
+  "2025-5-12", "2025-6-07", "2025-8-09", // Vesak Day, Hari Raya Haji, National Day
   "2025-10-20", "2025-12-25"  // Deepavali, Christmas Day
 ];
 
