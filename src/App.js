@@ -198,20 +198,21 @@ const App = () => {
     });
   };
 
-  // Auto-roster therapists when the button is clicked
-  const autoRoster = () => {
-    const updatedCalendar = [...calendar]; // Copy the calendar state to avoid mutating it directly
-    
-    updatedCalendar[currentMonth].forEach(day => {
-      if (day.therapists.length === 0 && !blockedDays.includes(day.dayKey)) {
-        const therapistToAssign = therapists[day.date.getDate() % therapists.length]; // Simple round-robin assignment
-        day.therapists.push(therapistToAssign);
-      }
-    });
+// Auto-roster therapists when the button is clicked
+const autoRoster = () => {
+  const updatedCalendar = [...calendar]; // Copy the calendar state to avoid mutating it directly
+  
+  updatedCalendar[currentMonth].forEach(day => {
+    const isWeekend = day.date.getDay() === 0 || day.date.getDay() === 6; // 0 = Sunday, 6 = Saturday
+    if (day.therapists.length === 0 && !blockedDays.includes(day.dayKey) && !isWeekend) {
+      const therapistToAssign = therapists[day.date.getDate() % therapists.length]; // Simple round-robin assignment
+      day.therapists.push(therapistToAssign);
+    }
+  });
 
-    setCalendar(updatedCalendar); // Update the calendar with auto-assignments
-    setAutoRosterTriggered(true); // Mark that auto-roster has been triggered
-  };
+  setCalendar(updatedCalendar); // Update the calendar with auto-assignments
+  setAutoRosterTriggered(true); // Mark that auto-roster has been triggered
+};
 
   return (
     <DndProvider backend={HTML5Backend}>
