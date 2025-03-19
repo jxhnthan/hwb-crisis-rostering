@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
@@ -140,6 +140,28 @@ const App = () => {
     setTodayDate(new Date(currentYear, currentMonthIndex, currentDay)); // Set today's date
   };
 
+  // Auto-rostering logic that excludes blocked days
+  const assignTherapists = () => {
+    let therapistIndex = 0; // Start with the first therapist
+
+    // Loop through the days of the current month and assign therapists
+    setCalendar(prevCalendar => {
+      const updatedCalendar = prevCalendar.map((month, index) => {
+        if (index === currentMonth) {
+          return month.map(day => {
+            if (!blockedDays.includes(day.dayKey) && day.therapists.length === 0) {
+              day.therapists.push(therapists[therapistIndex]); // Assign therapist to available day
+              therapistIndex = (therapistIndex + 1) % therapists.length; // Move to next therapist
+            }
+            return day;
+          });
+        }
+        return month;
+      });
+      return updatedCalendar;
+    });
+  };
+
   // Handle moving a therapist into a calendar day
   const moveTherapist = (name, dayKey) => {
     setCalendar(prevCalendar => {
@@ -212,6 +234,7 @@ const App = () => {
             <button onClick={goToToday} style={{ marginLeft: '20px' }}>Today</button>
             <button onClick={resetCalendar} style={{ marginLeft: '20px' }}>Reset Calendar</button>
             <button onClick={saveAsPNG} style={{ marginLeft: '20px' }}>Save as PNG</button>
+            <button onClick={assignTherapists} style={{ marginLeft: '20px' }}>Auto-Roster</button>
           </div>
 
           <div id="calendar-container">
