@@ -52,6 +52,11 @@ const get2025Calendar = () => {
 
 const calendarData = get2025Calendar(); // Initialize full 2025 calendar
 
+// Check if a day is blocked
+const isBlockedDay = (dayKey) => {
+  return blockedDays.some(blocked => blocked.date === dayKey);
+};
+
 // Therapist Component (Draggable)
 const Therapist = ({ name }) => {
   const [, drag] = useDrag(() => ({
@@ -68,18 +73,16 @@ const Therapist = ({ name }) => {
 
 // Calendar Day (Drop Zone)
 const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, monthIndex }) => {
-  // Check if the current day is a blocked day
-  const blockedDay = blockedDays.find(blocked => blocked.date === day.dayKey);
-
+  const isBlocked = isBlockedDay(day.dayKey); // Check if this day is blocked
   const [, drop] = useDrop(() => ({
     accept: 'THERAPIST',
     drop: (item) => {
-      if (blockedDay) {
-        alert(`Cannot assign therapists to ${day.date.toDateString()} because it's blocked due to: ${blockedDay.reason}`);
-        return;
+      if (!isBlocked) {
+        console.log(`Dropped therapist: ${item.name} on ${day.dayKey} in month ${monthIndex}`);
+        moveTherapist(item.name, day.dayKey, monthIndex); // Use dayKey as the unique identifier
+      } else {
+        console.log(`Cannot drop therapist on blocked day: ${day.dayKey}`);
       }
-      console.log(`Dropped therapist: ${item.name} on ${day.dayKey} in month ${monthIndex}`);
-      moveTherapist(item.name, day.dayKey, monthIndex);
     }
   }));
 
@@ -91,17 +94,12 @@ const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, monthIndex 
         padding: '10px',
         minHeight: '80px',
         position: 'relative',
-        backgroundColor: isToday ? '#FFEB3B' : 'white',
-        opacity: blockedDay ? 0.5 : 1, // Make blocked days look faded
-        cursor: blockedDay ? 'not-allowed' : 'move' // Disable dragging on blocked days
+        backgroundColor: isBlocked ? '#f0f0f0' : isToday ? '#FFEB3B' : 'white', // Grey out blocked days
+        cursor: isBlocked ? 'not-allowed' : 'move', // Disable drop on blocked days
+        opacity: isBlocked ? 0.5 : 1 // Reduce opacity for blocked days
       }}
     >
       <strong>{day.date.toDateString()}</strong>
-      {blockedDay && (
-        <div style={{ color: 'red', fontSize: '12px', marginTop: '5px' }}>
-          Blocked: {blockedDay.reason}
-        </div>
-      )}
       {day.therapists.length > 0 ? (
         day.therapists.map((therapist, idx) => (
           <div key={idx} style={{ padding: '5px', backgroundColor: 'lightgreen' }}>
@@ -117,6 +115,7 @@ const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, monthIndex 
       ) : (
         <div style={{ color: 'gray' }}>No therapist assigned</div>
       )}
+      {isBlocked && <div style={{ position: 'absolute', top: '5px', right: '5px', fontSize: '12px', color: 'red' }}>Blocked</div>}
     </div>
   );
 };
@@ -209,8 +208,8 @@ const App = () => {
     newCalendar = newCalendar.map((month, monthIndex) => {
       return month.map(day => {
         const dayOfWeek = day.date.getDay(); // Get the day of the week (0-6)
-        if (dayOfWeek === 0 || dayOfWeek === 6) {
-          return day; // Skip weekends (Saturday: 6, Sunday: 0)
+        if (dayOfWeek === 0 || dayOfWeek === 6 || isBlockedDay(day.dayKey)) {
+          return day; // Skip weekends (Saturday: 6, Sunday: 0) and blocked days
         }
 
         // If the day is empty, assign a therapist in round-robin fashion
@@ -262,22 +261,21 @@ const App = () => {
 
         <div>
           <h2>2025 Calendar - {calendar[currentMonth][0].date.toLocaleString('default', { month: 'long' })}</h2>
-          <div>
-            <button onClick={() => setCurrentMonth((prev) => (prev === 0 ? 11 : prev - 1))} style={{ marginRight: '10px', cursor: 'pointer' }}>←</button>
-            <button onClick={() => setCurrentMonth((prev) => (prev === 11 ? 0 : prev + 1))} style={{ cursor: 'pointer' }}>→</button>
-            <button onClick={goToToday} style={{ marginLeft: '20px', cursor: 'pointer' }}>Today</button>
-            <button onClick={saveAsPNG} style={{ marginLeft: '20px', cursor: 'pointer' }}>Save as .PNG</button>
-            <button onClick={generateAutoRoster} style={{ marginLeft: '20px', cursor: 'pointer' }}>Generate Auto-Roster</button>
-            <button onClick={resetCalendar} style={{ marginLeft: '20px', cursor: 'pointer' }}>Reset Calendar</button>
-          </div>
-          <div ref={calendarRef}>
-            <Calendar 
-              monthDays={calendar[currentMonth]} 
-              moveTherapist={moveTherapist} 
-              removeTherapist={removeTherapist} 
-              todayDate={todayDate} 
-              monthIndex={currentMonth} 
-            />
+
+          <button onClick={goToToday} style={{ marginBottom: '20px' }}>Go to Today</button>
+
+          <Calendar 
+            monthDays={calendar[currentMonth]} 
+            moveTherapist={moveTherapist} 
+            removeTherapist={removeTherapist} 
+            todayDate={todayDate} 
+            monthIndex={currentMonth} 
+          />
+
+          <div style={{ marginTop: '20px' }}>
+            <button onClick={generateAutoRoster}>Generate Auto-Roster</button>
+            <button onClick={resetCalendar} style={{ marginLeft: '10px' }}>Reset Calendar</button>
+            <button onClick={saveAsPNG} style={{ marginLeft: '10px' }}>Save as PNG</button>
           </div>
         </div>
       </div>
@@ -286,6 +284,7 @@ const App = () => {
 };
 
 export default App;
+
 
 
 
