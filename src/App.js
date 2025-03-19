@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
@@ -52,7 +52,22 @@ const Therapist = ({ name }) => {
   }));
 
   return (
-    <div ref={drag} style={{ padding: '10px', margin: '5px', backgroundColor: 'lightblue', cursor: 'move' }}>
+    <div
+      ref={drag}
+      style={{
+        padding: '8px 12px',
+        margin: '5px',
+        backgroundColor: '#A8E6CF', // Pastel blue
+        cursor: 'move',
+        borderRadius: '20px', // Rounded corners for tag shape
+        fontWeight: 'bold',
+        color: '#333',
+        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
+        transition: 'background-color 0.2s',
+      }}
+      onMouseOver={(e) => e.target.style.backgroundColor = '#81C784'} // Hover effect
+      onMouseOut={(e) => e.target.style.backgroundColor = '#A8E6CF'} // Revert hover effect
+    >
       {name}
     </div>
   );
@@ -80,17 +95,45 @@ const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked }
         padding: '10px',
         minHeight: '80px',
         position: 'relative',
-        backgroundColor: isToday ? '#FFEB3B' : finalBlockedStatus ? '#D3D3D3' : 'white'
+        backgroundColor: isToday ? '#FFEB3B' : finalBlockedStatus ? '#D3D3D3' : 'white',
+        borderRadius: '10px', // Rounded corners
+        transition: 'background-color 0.2s',
+        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
+      }}
+      onMouseOver={(e) => {
+        if (!finalBlockedStatus) {
+          e.target.style.backgroundColor = '#F1F1F1'; // Light hover effect
+        }
+      }}
+      onMouseOut={(e) => {
+        if (!finalBlockedStatus) {
+          e.target.style.backgroundColor = 'white'; // Revert hover effect
+        }
       }}
     >
       <strong>{day.date.toDateString()}</strong>
       {day.therapists.length > 0 ? (
         day.therapists.map((therapist, idx) => (
-          <div key={idx} style={{ padding: '5px', backgroundColor: 'lightgreen' }}>
+          <div
+            key={idx}
+            style={{
+              padding: '5px',
+              backgroundColor: '#D1F2E8', // Pastel green
+              borderRadius: '15px', // Rounded corners for therapist tag
+              margin: '5px 0',
+            }}
+          >
             {therapist}
-            <button 
-              onClick={() => removeTherapist(therapist, day.dayKey)} 
-              style={{ marginLeft: '10px', color: 'red', cursor: 'pointer' }}
+            <button
+              onClick={() => removeTherapist(therapist, day.dayKey)}
+              style={{
+                marginLeft: '10px',
+                color: 'red',
+                cursor: 'pointer',
+                background: 'transparent',
+                border: 'none',
+                fontWeight: 'bold',
+              }}
             >
               Remove
             </button>
@@ -111,13 +154,13 @@ const Calendar = ({ monthDays, moveTherapist, removeTherapist, todayDate }) => {
         const isToday = todayDate && day.date.toDateString() === todayDate.toDateString();
         const isBlocked = blockedDays.includes(day.dayKey); // Check if the day is blocked
         return (
-          <CalendarDay 
+          <CalendarDay
             key={day.dayKey}
             day={day}
-            moveTherapist={moveTherapist} 
-            removeTherapist={removeTherapist} 
-            isToday={isToday} 
-            isBlocked={isBlocked} 
+            moveTherapist={moveTherapist}
+            removeTherapist={removeTherapist}
+            isToday={isToday}
+            isBlocked={isBlocked}
           />
         );
       })}
@@ -127,7 +170,7 @@ const Calendar = ({ monthDays, moveTherapist, removeTherapist, todayDate }) => {
 
 const App = () => {
   const [currentMonth, setCurrentMonth] = useState(0); // Start with January (index 0)
-  const [calendar, setCalendar] = useState(calendarData); // Store entire calendar state
+  const [calendar, setCalendar] = useState(get2025Calendar()); // Initialize calendar state
   const [todayDate, setTodayDate] = useState(null); // For tracking today's date
   const [autoRosterTriggered, setAutoRosterTriggered] = useState(false); // Track if Auto Roster was triggered
 
@@ -145,10 +188,10 @@ const App = () => {
 
   // Handle moving a therapist into a calendar day
   const moveTherapist = (name, dayKey) => {
-    setCalendar(prevCalendar => {
+    setCalendar((prevCalendar) => {
       const updatedCalendar = prevCalendar.map((month, index) => {
         if (index === currentMonth) {
-          return month.map(day => {
+          return month.map((day) => {
             if (day.dayKey === dayKey && !blockedDays.includes(dayKey)) {
               if (!day.therapists.includes(name)) {
                 return { ...day, therapists: [...day.therapists, name] };
@@ -165,12 +208,12 @@ const App = () => {
 
   // Handle removing a therapist from a calendar day
   const removeTherapist = (name, dayKey) => {
-    setCalendar(prevCalendar => {
+    setCalendar((prevCalendar) => {
       const updatedCalendar = prevCalendar.map((month, index) => {
         if (index === currentMonth) {
-          return month.map(day => {
+          return month.map((day) => {
             if (day.dayKey === dayKey) {
-              return { ...day, therapists: day.therapists.filter(therapist => therapist !== name) };
+              return { ...day, therapists: day.therapists.filter((therapist) => therapist !== name) };
             }
             return day;
           });
@@ -262,86 +305,67 @@ const App = () => {
                   cursor: 'pointer',
                   fontWeight: '500',
                   transition: 'background 0.2s',
-                  marginLeft: '10px',
                 }}
               >
                 Next →
               </button>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button
-                onClick={goToToday}
-                style={{
-                  padding: '8px 16px',
-                  background: '#f4f4f7',
-                  color: '#333',
-                  border: '1px solid #ddd',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontWeight: '500',
-                  transition: 'background 0.2s',
-                }}
-              >
-                Today
-              </button>
-              <button
-                onClick={resetCalendar}
-                style={{
-                  padding: '8px 16px',
-                  background: '#f4f4f7',
-                  color: '#333',
-                  border: '1px solid #ddd',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontWeight: '500',
-                  transition: 'background 0.2s',
-                }}
-              >
-                Reset Calendar
-              </button>
-              <button
-                onClick={autoRoster}
-                style={{
-                  padding: '8px 16px',
-                  background: '#f4f4f7',
-                  color: '#333',
-                  border: '1px solid #ddd',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontWeight: '500',
-                  transition: 'background 0.2s',
-                  disabled: autoRosterTriggered,
-                }}
-                disabled={autoRosterTriggered}
-              >
-                {autoRosterTriggered ? "Auto Roster Applied" : "Auto Roster"}
-              </button>
-              <button
-                onClick={saveAsPNG}
-                style={{
-                  padding: '8px 16px',
-                  background: '#f4f4f7',
-                  color: '#333',
-                  border: '1px solid #ddd',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontWeight: '500',
-                  transition: 'background 0.2s',
-                }}
-              >
-                Save as PNG
-              </button>
-            </div>
-          </div>
+            <button
+              onClick={resetCalendar}
+              style={{
+                padding: '8px 16px',
+                background: '#f4f4f7',
+                color: '#333',
+                border: '1px solid #ddd',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: '500',
+                transition: 'background 0.2s',
+              }}
+            >
+              Reset Calendar
+            </button>
+            <button
+              onClick={autoRoster}
+              style={{
+                padding: '8px 16px',
+                background: '#f4f4f7',
+                color: '#333',
+                border: '1px solid #ddd',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: '500',
+                transition: 'background 0.2s',
+              }}
+              disabled={autoRosterTriggered}
+            >
+              {autoRosterTriggered ? 'Rostered' : 'Auto Roster'}
+            </button>
+            <button
+              onClick={saveAsPNG}
+              style={{
+                padding: '8px 16px',
+                background: '#f4f4f7',
+                color: '#333',
+                border: '1px solid #ddd',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: '500',
+                transition: 'background 0.2s',
+              }}
+            >
+              Save as PNG
+            </button>
 
-          <div id="calendar-container" style={{ marginTop: '20px' }}>
-            <Calendar
-              monthDays={calendar[currentMonth]}
-              moveTherapist={moveTherapist}
-              removeTherapist={removeTherapist}
-              todayDate={todayDate}
-            />
+            <div id="calendar-container">
+              <Calendar
+                monthDays={calendar[currentMonth]}
+                moveTherapist={moveTherapist}
+                removeTherapist={removeTherapist}
+                todayDate={todayDate}
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -350,6 +374,12 @@ const App = () => {
 };
 
 export default App;
+
+
+
+
+
+
 
 
 
