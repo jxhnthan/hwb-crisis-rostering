@@ -60,10 +60,13 @@ const Therapist = ({ name }) => {
 
 // Calendar Day (Drop Zone)
 const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked }) => {
+  const isWeekend = day.date.getDay() === 0 || day.date.getDay() === 6; // 0 = Sunday, 6 = Saturday
+  const finalBlockedStatus = isBlocked || isWeekend; // Combine blocked days and weekends
+
   const [, drop] = useDrop(() => ({
     accept: 'THERAPIST',
     drop: (item) => {
-      if (!isBlocked) {
+      if (!finalBlockedStatus) {
         moveTherapist(item.name, day.dayKey); // Only move if the day is not blocked
       }
     }
@@ -77,7 +80,7 @@ const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked }
         padding: '10px',
         minHeight: '80px',
         position: 'relative',
-        backgroundColor: isToday ? '#FFEB3B' : isBlocked ? '#D3D3D3' : 'white' 
+        backgroundColor: isToday ? '#FFEB3B' : finalBlockedStatus ? '#D3D3D3' : 'white'
       }}
     >
       <strong>{day.date.toDateString()}</strong>
@@ -248,6 +251,7 @@ const App = () => {
 };
 
 export default App;
+
 
 
 
