@@ -262,7 +262,21 @@ const App = () => {
         <div>
           <h2>2025 Calendar - {calendar[currentMonth][0].date.toLocaleString('default', { month: 'long' })}</h2>
 
-          <button onClick={goToToday} style={{ marginBottom: '20px' }}>Go to Today</button>
+          {/* Navigation buttons to change months */}
+          <button 
+            onClick={() => setCurrentMonth((prev) => (prev === 0 ? 11 : prev - 1))} 
+            style={{ marginRight: '10px' }}
+          >
+            ← Previous Month
+          </button>
+          <button 
+            onClick={() => setCurrentMonth((prev) => (prev === 11 ? 0 : prev + 1))} 
+            style={{ marginLeft: '10px' }}
+          >
+            Next Month →
+          </button>
+
+          <button onClick={goToToday} style={{ marginBottom: '20px', marginLeft: '20px' }}>Go to Today</button>
 
           <Calendar 
             monthDays={calendar[currentMonth]} 
@@ -284,6 +298,7 @@ const App = () => {
 };
 
 export default App;
+
 
 
 
