@@ -365,7 +365,7 @@ const App = () => {
               onClick={autoRoster}
               style={{
                 padding: '8px 16px',
-                background: '#A8E6CF', // Pastel green
+                background: '#003049', // Pastel green
                 color: '#fff',
                 border: 'none',
                 borderRadius: '8px',
