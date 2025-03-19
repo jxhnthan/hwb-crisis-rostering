@@ -10,6 +10,22 @@ const therapists = [
   "Andrew Lim", "Janice Leong", "Oliver Tan"
 ];
 
+// Blocked days (e.g., public holidays and special days)
+const blockedDays = [
+  { date: '2025-01-01', reason: 'New Year\'s Day' },
+  { date: '2025-01-29', reason: 'Chinese New Year' },
+  { date: '2025-01-30', reason: 'Chinese New Year' },
+  { date: '2025-03-31', reason: 'Hari Raya Puasa' },
+  { date: '2025-04-18', reason: 'Good Friday' },
+  { date: '2025-05-01', reason: 'Labour Day' },
+  { date: '2025-05-12', reason: 'Vesak Day' },
+  { date: '2025-06-07', reason: 'Hari Raya Haji' },
+  { date: '2025-08-09', reason: 'National Day' },
+  { date: '2025-10-20', reason: 'Deepavali' },
+  { date: '2025-10-21', reason: 'NUS Well-Being Day' }, // Blocked day
+  { date: '2025-12-25', reason: 'Christmas Day' }
+];
+
 // Helper function to get the dates for each month in 2025 with unique keys
 const get2025Calendar = () => {
   const months = [
@@ -52,11 +68,18 @@ const Therapist = ({ name }) => {
 
 // Calendar Day (Drop Zone)
 const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, monthIndex }) => {
+  // Check if the current day is a blocked day
+  const blockedDay = blockedDays.find(blocked => blocked.date === day.dayKey);
+
   const [, drop] = useDrop(() => ({
     accept: 'THERAPIST',
     drop: (item) => {
+      if (blockedDay) {
+        alert(`Cannot assign therapists to ${day.date.toDateString()} because it's blocked due to: ${blockedDay.reason}`);
+        return;
+      }
       console.log(`Dropped therapist: ${item.name} on ${day.dayKey} in month ${monthIndex}`);
-      moveTherapist(item.name, day.dayKey, monthIndex); // Use dayKey as the unique identifier
+      moveTherapist(item.name, day.dayKey, monthIndex);
     }
   }));
 
@@ -68,10 +91,17 @@ const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, monthIndex 
         padding: '10px',
         minHeight: '80px',
         position: 'relative',
-        backgroundColor: isToday ? '#FFEB3B' : 'white' // Highlight today's date
+        backgroundColor: isToday ? '#FFEB3B' : 'white',
+        opacity: blockedDay ? 0.5 : 1, // Make blocked days look faded
+        cursor: blockedDay ? 'not-allowed' : 'move' // Disable dragging on blocked days
       }}
     >
       <strong>{day.date.toDateString()}</strong>
+      {blockedDay && (
+        <div style={{ color: 'red', fontSize: '12px', marginTop: '5px' }}>
+          Blocked: {blockedDay.reason}
+        </div>
+      )}
       {day.therapists.length > 0 ? (
         day.therapists.map((therapist, idx) => (
           <div key={idx} style={{ padding: '5px', backgroundColor: 'lightgreen' }}>
@@ -256,6 +286,7 @@ const App = () => {
 };
 
 export default App;
+
 
 
 
