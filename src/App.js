@@ -10,20 +10,20 @@ const therapists = [
   "Andrew Lim", "Janice Leong", "Oliver Tan"
 ];
 
-// Blocked days (e.g., public holidays and special days)
+// Define blocked days for 2025
 const blockedDays = [
-  { date: '2025-01-01', reason: 'New Year\'s Day' },
-  { date: '2025-01-29', reason: 'Chinese New Year' },
-  { date: '2025-01-30', reason: 'Chinese New Year' },
-  { date: '2025-03-31', reason: 'Hari Raya Puasa' },
-  { date: '2025-04-18', reason: 'Good Friday' },
-  { date: '2025-05-01', reason: 'Labour Day' },
-  { date: '2025-05-12', reason: 'Vesak Day' },
-  { date: '2025-06-07', reason: 'Hari Raya Haji' },
-  { date: '2025-08-09', reason: 'National Day' },
-  { date: '2025-10-20', reason: 'Deepavali' },
-  { date: '2025-10-21', reason: 'NUS Well-Being Day' }, // Blocked day
-  { date: '2025-12-25', reason: 'Christmas Day' }
+  '2025-01-01', // New Year's Day
+  '2025-01-29', // Chinese New Year
+  '2025-01-30',
+  '2025-03-31', // Hari Raya Puasa
+  '2025-04-18', // Good Friday
+  '2025-05-01', // Labour Day
+  '2025-05-12', // Vesak Day
+  '2025-06-07', // Hari Raya Haji
+  '2025-08-09', // National Day
+  '2025-10-20', // Deepavali
+  '2025-12-25', // Christmas Day
+  '2025-10-21', // NUS Well-Being Day
 ];
 
 // Helper function to get the dates for each month in 2025 with unique keys
@@ -37,7 +37,7 @@ const get2025Calendar = () => {
   const calendar = months.map(([days, month], monthIndex) => {
     const monthDays = Array.from({ length: days }, (_, dayIndex) => {
       const date = new Date(2025, monthIndex, dayIndex + 1);
-      const dayKey = `${2025}-${monthIndex + 1}-${dayIndex + 1}`; // Unique day identifier (YYYY-MM-DD)
+      const dayKey = date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
       return {
         date,
         dayKey, // Use dayKey as the unique identifier
@@ -51,11 +51,6 @@ const get2025Calendar = () => {
 };
 
 const calendarData = get2025Calendar(); // Initialize full 2025 calendar
-
-// Check if a day is blocked
-const isBlockedDay = (dayKey) => {
-  return blockedDays.some(blocked => blocked.date === dayKey);
-};
 
 // Therapist Component (Draggable)
 const Therapist = ({ name }) => {
@@ -72,16 +67,13 @@ const Therapist = ({ name }) => {
 };
 
 // Calendar Day (Drop Zone)
-const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, monthIndex }) => {
-  const isBlocked = isBlockedDay(day.dayKey); // Check if this day is blocked
+const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, monthIndex, isBlocked }) => {
   const [, drop] = useDrop(() => ({
     accept: 'THERAPIST',
     drop: (item) => {
       if (!isBlocked) {
         console.log(`Dropped therapist: ${item.name} on ${day.dayKey} in month ${monthIndex}`);
         moveTherapist(item.name, day.dayKey, monthIndex); // Use dayKey as the unique identifier
-      } else {
-        console.log(`Cannot drop therapist on blocked day: ${day.dayKey}`);
       }
     }
   }));
@@ -94,9 +86,7 @@ const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, monthIndex 
         padding: '10px',
         minHeight: '80px',
         position: 'relative',
-        backgroundColor: isBlocked ? '#f0f0f0' : isToday ? '#FFEB3B' : 'white', // Grey out blocked days
-        cursor: isBlocked ? 'not-allowed' : 'move', // Disable drop on blocked days
-        opacity: isBlocked ? 0.5 : 1 // Reduce opacity for blocked days
+        backgroundColor: isBlocked ? '#d3d3d3' : isToday ? '#FFEB3B' : 'white', // Blocked days greyed out
       }}
     >
       <strong>{day.date.toDateString()}</strong>
@@ -115,7 +105,6 @@ const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, monthIndex 
       ) : (
         <div style={{ color: 'gray' }}>No therapist assigned</div>
       )}
-      {isBlocked && <div style={{ position: 'absolute', top: '5px', right: '5px', fontSize: '12px', color: 'red' }}>Blocked</div>}
     </div>
   );
 };
@@ -126,6 +115,7 @@ const Calendar = ({ monthDays, moveTherapist, removeTherapist, todayDate, monthI
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '10px', marginTop: '20px' }}>
       {monthDays.map((day, index) => {
         const isToday = todayDate && day.date.toDateString() === todayDate.toDateString();
+        const isBlocked = blockedDays.includes(day.dayKey);
         return (
           <CalendarDay 
             key={day.dayKey} // Use the unique dayKey
@@ -134,6 +124,7 @@ const Calendar = ({ monthDays, moveTherapist, removeTherapist, todayDate, monthI
             removeTherapist={removeTherapist} 
             isToday={isToday} 
             monthIndex={monthIndex} 
+            isBlocked={isBlocked} // Check if the day is blocked
           />
         );
       })}
@@ -208,12 +199,12 @@ const App = () => {
     newCalendar = newCalendar.map((month, monthIndex) => {
       return month.map(day => {
         const dayOfWeek = day.date.getDay(); // Get the day of the week (0-6)
-        if (dayOfWeek === 0 || dayOfWeek === 6 || isBlockedDay(day.dayKey)) {
-          return day; // Skip weekends (Saturday: 6, Sunday: 0) and blocked days
+        if (dayOfWeek === 0 || dayOfWeek === 6) {
+          return day; // Skip weekends (Saturday: 6, Sunday: 0)
         }
 
-        // If the day is empty, assign a therapist in round-robin fashion
-        if (day.therapists.length === 0) {
+        // If the day is empty and not blocked, assign a therapist in round-robin fashion
+        if (day.therapists.length === 0 && !blockedDays.includes(day.dayKey)) {
           let selectedTherapist = therapists[therapistIndex];
           day.therapists.push(selectedTherapist);
 
@@ -261,35 +252,22 @@ const App = () => {
 
         <div>
           <h2>2025 Calendar - {calendar[currentMonth][0].date.toLocaleString('default', { month: 'long' })}</h2>
-
-          {/* Navigation buttons to change months */}
-          <button 
-            onClick={() => setCurrentMonth((prev) => (prev === 0 ? 11 : prev - 1))} 
-            style={{ marginRight: '10px' }}
-          >
-            ← Previous Month
-          </button>
-          <button 
-            onClick={() => setCurrentMonth((prev) => (prev === 11 ? 0 : prev + 1))} 
-            style={{ marginLeft: '10px' }}
-          >
-            Next Month →
-          </button>
-
-          <button onClick={goToToday} style={{ marginBottom: '20px', marginLeft: '20px' }}>Go to Today</button>
-
-          <Calendar 
-            monthDays={calendar[currentMonth]} 
-            moveTherapist={moveTherapist} 
-            removeTherapist={removeTherapist} 
-            todayDate={todayDate} 
-            monthIndex={currentMonth} 
-          />
-
-          <div style={{ marginTop: '20px' }}>
-            <button onClick={generateAutoRoster}>Generate Auto-Roster</button>
-            <button onClick={resetCalendar} style={{ marginLeft: '10px' }}>Reset Calendar</button>
-            <button onClick={saveAsPNG} style={{ marginLeft: '10px' }}>Save as PNG</button>
+          <div>
+            <button onClick={() => setCurrentMonth((prev) => (prev === 0 ? 11 : prev - 1))} style={{ marginRight: '10px', cursor: 'pointer' }}>←</button>
+            <button onClick={() => setCurrentMonth((prev) => (prev === 11 ? 0 : prev + 1))} style={{ cursor: 'pointer' }}>→</button>
+            <button onClick={goToToday} style={{ marginLeft: '20px', cursor: 'pointer' }}>Today</button>
+            <button onClick={saveAsPNG} style={{ marginLeft: '20px', cursor: 'pointer' }}>Save as .PNG</button>
+            <button onClick={generateAutoRoster} style={{ marginLeft: '20px', cursor: 'pointer' }}>Generate Auto-Roster</button>
+            <button onClick={resetCalendar} style={{ marginLeft: '20px', cursor: 'pointer' }}>Reset Calendar</button>
+          </div>
+          <div ref={calendarRef}>
+            <Calendar 
+              monthDays={calendar[currentMonth]} 
+              moveTherapist={moveTherapist} 
+              removeTherapist={removeTherapist} 
+              todayDate={todayDate} 
+              monthIndex={currentMonth} 
+            />
           </div>
         </div>
       </div>
@@ -298,6 +276,7 @@ const App = () => {
 };
 
 export default App;
+
 
 
 
