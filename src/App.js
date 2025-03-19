@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import html2canvas from 'html2canvas'; // Import html2canvas
+import html2canvas from 'html2canvas';
 
 // Define therapist names
 const therapists = [
@@ -12,11 +12,10 @@ const therapists = [
 
 // Blocked days (in YYYY-MM-DD format)
 const blockedDays = [
-  "2025-1-1", "2025-1-29", "2025-1-30", // New Year’s Day, Chinese New Year
-  "2025-3-31", "2025-4-18", "2025-5-1", // Hari Raya Puasa, Good Friday, Labour Day
-  "2025-5-12", "2025-6-7", "2025-8-9", // Vesak Day, Hari Raya Haji, National Day
-  "2025-3-28", "2025-10-25", // NUS Wellbeing Day
-  "2025-10-20", "2025-12-25"  // Deepavali, Christmas Day
+  "2025-1-1", "2025-1-29", "2025-1-30", 
+  "2025-3-31", "2025-4-18", "2025-5-1", 
+  "2025-5-12", "2025-6-7", "2025-8-9", 
+  "2025-3-28", "2025-10-25", "2025-10-20", "2025-12-25"
 ];
 
 // Helper function to get the dates for each month in 2025 with unique keys
@@ -33,7 +32,7 @@ const get2025Calendar = () => {
       const dayKey = `${2025}-${monthIndex + 1}-${dayIndex + 1}`; // Unique day identifier (YYYY-MM-DD)
       return {
         date,
-        dayKey, // Use dayKey as the unique identifier
+        dayKey,
         therapists: []
       };
     });
@@ -78,7 +77,7 @@ const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked }
         padding: '10px',
         minHeight: '80px',
         position: 'relative',
-        backgroundColor: isToday ? '#FFEB3B' : isBlocked ? '#D3D3D3' : 'white' // Highlight today's date or blocked days
+        backgroundColor: isToday ? '#FFEB3B' : isBlocked ? '#D3D3D3' : 'white' 
       }}
     >
       <strong>{day.date.toDateString()}</strong>
@@ -115,7 +114,7 @@ const Calendar = ({ monthDays, moveTherapist, removeTherapist, todayDate }) => {
             moveTherapist={moveTherapist} 
             removeTherapist={removeTherapist} 
             isToday={isToday} 
-            isBlocked={isBlocked} // Pass isBlocked as a prop
+            isBlocked={isBlocked} 
           />
         );
       })}
@@ -138,28 +137,6 @@ const App = () => {
   const goToToday = () => {
     setCurrentMonth(currentMonthIndex); // Set to current month
     setTodayDate(new Date(currentYear, currentMonthIndex, currentDay)); // Set today's date
-  };
-
-  // Auto-rostering logic that excludes blocked days
-  const assignTherapists = () => {
-    let therapistIndex = 0; // Start with the first therapist
-
-    // Loop through the days of the current month and assign therapists
-    setCalendar(prevCalendar => {
-      const updatedCalendar = prevCalendar.map((month, index) => {
-        if (index === currentMonth) {
-          return month.map(day => {
-            if (!blockedDays.includes(day.dayKey) && day.therapists.length === 0) {
-              day.therapists.push(therapists[therapistIndex]); // Assign therapist to available day
-              therapistIndex = (therapistIndex + 1) % therapists.length; // Move to next therapist
-            }
-            return day;
-          });
-        }
-        return month;
-      });
-      return updatedCalendar;
-    });
   };
 
   // Handle moving a therapist into a calendar day
@@ -202,7 +179,7 @@ const App = () => {
 
   // Reset the calendar to its original unassigned state
   const resetCalendar = () => {
-    setCalendar(calendarData); // Reset the calendar state to its initial state
+    setCalendar(get2025Calendar()); // Reset the calendar state to its initial state
   };
 
   // Function to save the calendar as PNG
@@ -215,6 +192,20 @@ const App = () => {
       link.click(); // Trigger the download
     });
   };
+
+  // Auto-roster therapists after calendar reset or when month changes
+  useEffect(() => {
+    const updatedCalendar = [...calendar]; // Copy the calendar state to avoid mutating it directly
+    
+    updatedCalendar[currentMonth].forEach(day => {
+      if (day.therapists.length === 0 && !blockedDays.includes(day.dayKey)) {
+        const therapistToAssign = therapists[day.date.getDate() % therapists.length]; // Simple round-robin assignment
+        day.therapists.push(therapistToAssign);
+      }
+    });
+
+    setCalendar(updatedCalendar); // Update the calendar with auto-assignments
+  }, [currentMonth]);
 
   return (
     <DndProvider backend={HTML5Backend}>
@@ -234,7 +225,6 @@ const App = () => {
             <button onClick={goToToday} style={{ marginLeft: '20px' }}>Today</button>
             <button onClick={resetCalendar} style={{ marginLeft: '20px' }}>Reset Calendar</button>
             <button onClick={saveAsPNG} style={{ marginLeft: '20px' }}>Save as PNG</button>
-            <button onClick={assignTherapists} style={{ marginLeft: '20px' }}>Auto-Roster</button>
           </div>
 
           <div id="calendar-container">
@@ -252,6 +242,7 @@ const App = () => {
 };
 
 export default App;
+
 
 
 
