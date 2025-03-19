@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import html2canvas from 'html2canvas'; // Import html2canvas
+import html2canvas from 'html2canvas';
 
 // Define therapist names
 const therapists = [
@@ -12,11 +12,10 @@ const therapists = [
 
 // Blocked days (in YYYY-MM-DD format)
 const blockedDays = [
-  "2025-1-1", "2025-1-29", "2025-1-30", // New Year’s Day, Chinese New Year
-  "2025-3-31", "2025-4-18", "2025-5-1", // Hari Raya Puasa, Good Friday, Labour Day
-  "2025-5-12", "2025-6-7", "2025-8-9", // Vesak Day, Hari Raya Haji, National Day
-  "2025-3-28", "2025-10-25", // NUS Wellbeing Day
-  "2025-10-20", "2025-12-25"  // Deepavali, Christmas Day
+  "2025-1-1", "2025-1-29", "2025-1-30", 
+  "2025-3-31", "2025-4-18", "2025-5-1", 
+  "2025-5-12", "2025-6-7", "2025-8-9", 
+  "2025-3-28", "2025-10-25", "2025-10-20", "2025-12-25"
 ];
 
 // Helper function to get the dates for each month in 2025 with unique keys
@@ -33,7 +32,7 @@ const get2025Calendar = () => {
       const dayKey = `${2025}-${monthIndex + 1}-${dayIndex + 1}`; // Unique day identifier (YYYY-MM-DD)
       return {
         date,
-        dayKey, // Use dayKey as the unique identifier
+        dayKey,
         therapists: []
       };
     });
@@ -78,7 +77,7 @@ const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked }
         padding: '10px',
         minHeight: '80px',
         position: 'relative',
-        backgroundColor: isToday ? '#FFEB3B' : isBlocked ? '#D3D3D3' : 'white' // Highlight today's date or blocked days
+        backgroundColor: isToday ? '#FFEB3B' : isBlocked ? '#D3D3D3' : 'white' 
       }}
     >
       <strong>{day.date.toDateString()}</strong>
@@ -115,7 +114,7 @@ const Calendar = ({ monthDays, moveTherapist, removeTherapist, todayDate }) => {
             moveTherapist={moveTherapist} 
             removeTherapist={removeTherapist} 
             isToday={isToday} 
-            isBlocked={isBlocked} // Pass isBlocked as a prop
+            isBlocked={isBlocked} 
           />
         );
       })}
@@ -127,7 +126,7 @@ const App = () => {
   const [currentMonth, setCurrentMonth] = useState(0); // Start with January (index 0)
   const [calendar, setCalendar] = useState(calendarData); // Store entire calendar state
   const [todayDate, setTodayDate] = useState(null); // For tracking today's date
-  const [autoRosterTriggered, setAutoRosterTriggered] = useState(false); // Track if auto-rostering has been triggered
+  const [autoRosterTriggered, setAutoRosterTriggered] = useState(false); // Track if Auto Roster was triggered
 
   // Get the current date
   const currentDate = new Date();
@@ -139,15 +138,6 @@ const App = () => {
   const goToToday = () => {
     setCurrentMonth(currentMonthIndex); // Set to current month
     setTodayDate(new Date(currentYear, currentMonthIndex, currentDay)); // Set today's date
-  };
-
-  // Handle changing months and reset auto roster trigger
-  const changeMonth = (direction) => {
-    setCurrentMonth((prev) => {
-      const newMonth = direction === 'next' ? (prev === 11 ? 0 : prev + 1) : (prev === 0 ? 11 : prev - 1);
-      setAutoRosterTriggered(false); // Reset auto roster when changing months
-      return newMonth;
-    });
   };
 
   // Handle moving a therapist into a calendar day
@@ -191,29 +181,7 @@ const App = () => {
   // Reset the calendar to its original unassigned state
   const resetCalendar = () => {
     setCalendar(get2025Calendar()); // Reset the calendar state to its initial state
-    setAutoRosterTriggered(false); // Reset auto roster button state
-  };
-
-  // Auto roster logic (only triggered when the button is clicked)
-  const autoRoster = () => {
-    if (autoRosterTriggered) return;
-
-    setCalendar((prevCalendar) => {
-      const updatedCalendar = prevCalendar.map((month) => {
-        return month.map((day) => {
-          if (!day.therapists.length && !blockedDays.includes(day.dayKey)) {
-            const availableTherapists = therapists.filter(therapist => !day.therapists.includes(therapist));
-            if (availableTherapists.length > 0) {
-              day.therapists.push(availableTherapists[0]);
-            }
-          }
-          return day;
-        });
-      });
-      return updatedCalendar;
-    });
-
-    setAutoRosterTriggered(true); // Mark the auto roster as triggered
+    setAutoRosterTriggered(false); // Reset auto roster trigger
   };
 
   // Function to save the calendar as PNG
@@ -225,6 +193,21 @@ const App = () => {
       link.download = 'calendar.png'; // Set the name of the file
       link.click(); // Trigger the download
     });
+  };
+
+  // Auto-roster therapists when the button is clicked
+  const autoRoster = () => {
+    const updatedCalendar = [...calendar]; // Copy the calendar state to avoid mutating it directly
+    
+    updatedCalendar[currentMonth].forEach(day => {
+      if (day.therapists.length === 0 && !blockedDays.includes(day.dayKey)) {
+        const therapistToAssign = therapists[day.date.getDate() % therapists.length]; // Simple round-robin assignment
+        day.therapists.push(therapistToAssign);
+      }
+    });
+
+    setCalendar(updatedCalendar); // Update the calendar with auto-assignments
+    setAutoRosterTriggered(true); // Mark that auto-roster has been triggered
   };
 
   return (
@@ -240,11 +223,13 @@ const App = () => {
         <div>
           <h2>2025 Calendar - {calendar[currentMonth][0].date.toLocaleString('default', { month: 'long' })}</h2>
           <div>
-            <button onClick={() => changeMonth('prev')} style={{ marginRight: '10px' }}>←</button>
-            <button onClick={() => changeMonth('next')} style={{ marginLeft: '10px' }}>→</button>
+            <button onClick={() => setCurrentMonth((prev) => (prev === 0 ? 11 : prev - 1))} style={{ marginRight: '10px' }}>←</button>
+            <button onClick={() => setCurrentMonth((prev) => (prev === 11 ? 0 : prev + 1))} style={{ marginLeft: '10px' }}>→</button>
             <button onClick={goToToday} style={{ marginLeft: '20px' }}>Today</button>
             <button onClick={resetCalendar} style={{ marginLeft: '20px' }}>Reset Calendar</button>
-            <button onClick={autoRoster} style={{ marginLeft: '20px' }} disabled={autoRosterTriggered}>Auto Roster</button>
+            <button onClick={autoRoster} style={{ marginLeft: '20px' }} disabled={autoRosterTriggered}>
+              {autoRosterTriggered ? "Auto Roster Applied" : "Auto Roster"}
+            </button>
             <button onClick={saveAsPNG} style={{ marginLeft: '20px' }}>Save as PNG</button>
           </div>
 
@@ -263,6 +248,7 @@ const App = () => {
 };
 
 export default App;
+
 
 
 
