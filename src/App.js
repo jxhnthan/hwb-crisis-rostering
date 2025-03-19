@@ -190,7 +190,7 @@ const App = () => {
 
   // Reset the calendar to its original unassigned state
   const resetCalendar = () => {
-    setCalendar(calendarData); // Reset the calendar state to its initial state
+    setCalendar(get2025Calendar()); // Reset the calendar state to its initial state
     setAutoRosterTriggered(false); // Reset auto roster button state
   };
 
@@ -263,6 +263,7 @@ const App = () => {
 };
 
 export default App;
+
 
 
 
