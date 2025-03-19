@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import html2canvas from 'html2canvas'; // Import html2canvas
+import html2canvas from 'html2canvas';
 
 // Define therapist names
 const therapists = [
@@ -10,7 +10,7 @@ const therapists = [
   "Andrew Lim", "Janice Leong", "Oliver Tan"
 ];
 
-// Define blocked days for 2025 in Singapore Timezone
+// Define blocked days for 2025 in Singapore Timezone (SGT)
 const blockedDays = [
   '2025-01-01', // New Year's Day
   '2025-01-29', // Chinese New Year
@@ -146,6 +146,16 @@ const App = () => {
   const currentMonthIndex = singaporeTime.getMonth();
   const currentYear = singaporeTime.getFullYear();
 
+  // Normalize date comparison by setting the time to 00:00:00
+  const normalizeDate = (date) => {
+    const newDate = new Date(date);
+    newDate.setHours(0, 0, 0, 0); // Set to midnight
+    return newDate;
+  };
+
+  // Normalize blocked days to avoid time discrepancies
+  const normalizedBlockedDays = blockedDays.map(day => normalizeDate(new Date(day)));
+
   // Set today's date when "Today" button is clicked
   const goToToday = () => {
     setCurrentMonth(currentMonthIndex); // Set to current month
@@ -206,7 +216,7 @@ const App = () => {
         }
 
         // If the day is empty and not blocked, assign a therapist in round-robin fashion
-        if (day.therapists.length === 0 && !blockedDays.includes(day.dayKey)) {
+        if (day.therapists.length === 0 && !normalizedBlockedDays.includes(normalizeDate(day.date))) {
           let selectedTherapist = therapists[therapistIndex];
           day.therapists.push(selectedTherapist);
 
@@ -278,6 +288,7 @@ const App = () => {
 };
 
 export default App;
+
 
 
 
