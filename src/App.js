@@ -10,7 +10,7 @@ const therapists = [
   "Andrew Lim", "Janice Leong", "Oliver Tan"
 ];
 
-// Define blocked days for 2025
+// Define blocked days for 2025 in Singapore Timezone
 const blockedDays = [
   '2025-01-01', // New Year's Day
   '2025-01-29', // Chinese New Year
@@ -115,7 +115,7 @@ const Calendar = ({ monthDays, moveTherapist, removeTherapist, todayDate, monthI
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '10px', marginTop: '20px' }}>
       {monthDays.map((day, index) => {
         const isToday = todayDate && day.date.toDateString() === todayDate.toDateString();
-        const isBlocked = blockedDays.includes(day.dayKey);
+        const isBlocked = blockedDays.includes(day.dayKey); // Check if the day is in blockedDays
         return (
           <CalendarDay 
             key={day.dayKey} // Use the unique dayKey
@@ -138,16 +138,18 @@ const App = () => {
   const [todayDate, setTodayDate] = useState(null); // For tracking today's date
   const calendarRef = useRef(); // Reference to the calendar container
 
-  // Get the current date
+  // Get the current date (Singapore time)
   const currentDate = new Date();
-  const currentDay = currentDate.getDate();
-  const currentMonthIndex = currentDate.getMonth();
-  const currentYear = currentDate.getFullYear();
+  const singaporeTime = new Date(currentDate.toLocaleString("en-US", { timeZone: "Asia/Singapore" }));
+
+  const currentDay = singaporeTime.getDate();
+  const currentMonthIndex = singaporeTime.getMonth();
+  const currentYear = singaporeTime.getFullYear();
 
   // Set today's date when "Today" button is clicked
   const goToToday = () => {
     setCurrentMonth(currentMonthIndex); // Set to current month
-    setTodayDate(new Date(currentYear, currentMonthIndex, currentDay)); // Set today's date
+    setTodayDate(singaporeTime); // Set today's date in Singapore timezone
   };
 
   // Handle moving a therapist into a calendar day
@@ -276,6 +278,7 @@ const App = () => {
 };
 
 export default App;
+
 
 
 
