@@ -220,17 +220,21 @@ const App = () => {
     setAutoRosterTriggered(false); // Reset auto roster trigger
   };
 
-  const saveAsPNG = () => {
-    // First, ensure all greyed-out days are one solid color (e.g., #D3D3D3)
-    const calendarDays = document.querySelectorAll('.calendar-day');
-  
-    calendarDays.forEach((day) => {
-      const backgroundColor = day.style.backgroundColor;
-      if (backgroundColor === 'rgb(211, 211, 211)') {  // This checks if the day is greyed out
-        day.style.backgroundColor = '#B0C4DE';  // Set to a solid color (e.g., Light Steel Blue)
-      }
-    });
-  
+const saveAsPNG = () => {
+  const calendarContainer = document.getElementById("calendar-container");
+
+  html2canvas(calendarContainer, {
+    backgroundColor: "white",
+    useCORS: true,
+  }).then((canvas) => {
+    const imgData = canvas.toDataURL("image/png");
+    const link = document.createElement('a');
+    link.href = imgData;
+    link.download = 'calendar_screenshot.png';
+    link.click();
+  });
+};
+
     // Now capture the screenshot
     const bodyElement = document.querySelector("body");
   
