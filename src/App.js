@@ -29,7 +29,7 @@ const get2025Calendar = () => {
   const calendar = months.map(([days, month], monthIndex) => {
     const monthDays = Array.from({ length: days }, (_, dayIndex) => {
       const date = new Date(2025, monthIndex, dayIndex + 1);
-      const dayKey = ${2025}-${monthIndex + 1}-${dayIndex + 1}; // Unique day identifier (YYYY-MM-DD)
+      const dayKey = `${2025}-${monthIndex + 1}-${dayIndex + 1}`; // Unique day identifier (YYYY-MM-DD)
       return {
         date,
         dayKey,
