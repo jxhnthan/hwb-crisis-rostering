@@ -221,40 +221,21 @@ const App = () => {
   };
 
   const saveAsPNG = () => {
-    // First, ensure all greyed-out days are one solid color (e.g., #D3D3D3)
-    const calendarDays = document.querySelectorAll('.calendar-day');
+    const calendarContainer = document.getElementById("calendar-container");
   
-    calendarDays.forEach((day) => {
-      const backgroundColor = day.style.backgroundColor;
-      if (backgroundColor === 'rgb(211, 211, 211)') {  // This checks if the day is greyed out
-        day.style.backgroundColor = '#B0C4DE';  // Set to a solid color (e.g., Light Steel Blue)
-      }
-    });
-  
-    // Now capture the screenshot
-    const bodyElement = document.querySelector("body");
-  
-    html2canvas(bodyElement, {
-      ignoreElements: (el) => el.classList.contains("ignore-export"), // Ignore any elements that shouldn't appear in the screenshot (e.g., buttons)
-      backgroundColor: "white", // Ensure transparent background
-      useCORS: true, // Allow cross-origin resource sharing for external images
-      scrollX: 0, // Ensure the whole page is captured starting from the top-left corner
-      scrollY: 0,
-      x: 0,
-      y: 0,
+    html2canvas(calendarContainer, {
+      backgroundColor: "white", // Ensure a white background for the calendar
+      useCORS: true,           // Allow cross-origin images to be included
+      scale: 2                 // Higher resolution for better image quality
     }).then((canvas) => {
       const imgData = canvas.toDataURL("image/png");
-      const link = document.createElement('a');
+      const link = document.createElement("a");
+      const currentMonthName = calendar[currentMonth][0].date.toLocaleString("default", { month: "long" });
       link.href = imgData;
-      link.download = 'webpage_screenshot.png'; // Set the default filename for download
+      link.download = `Therapist_Roster_${currentMonthName}_2025.png`;
       link.click(); // Trigger the download
-  
-      // Reset the greyed-out days back to their original color (optional)
-      calendarDays.forEach((day) => {
-        if (day.style.backgroundColor === '#B0C4DE') {
-          day.style.backgroundColor = '#D3D3D3'; // Reset to original grey color
-        }
-      });
+    }).catch((error) => {
+      console.error("Error generating PNG:", error);
     });
   };
   
