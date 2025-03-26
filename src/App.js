@@ -48,7 +48,7 @@ const calendarData = get2025Calendar(); // Initialize full 2025 calendar
 const Therapist = ({ name }) => {
   const [, drag] = useDrag(() => ({
     type: 'THERAPIST',
-    item: { name }
+    item: { name },
   }));
 
   return (
@@ -163,6 +163,18 @@ const App = () => {
   const [calendar, setCalendar] = useState(get2025Calendar()); // Initialize calendar state
   const [todayDate, setTodayDate] = useState(null); // For tracking today's date
   const [autoRosterTriggered, setAutoRosterTriggered] = useState(false); // Track if Auto Roster was triggered
+  const [workingFromHome, setWorkingFromHome] = useState(
+    therapists.reduce((acc, therapist) => {
+      acc[therapist] = {
+        Monday: false,
+        Tuesday: false,
+        Wednesday: false,
+        Thursday: false,
+        Friday: false,
+      };
+      return acc;
+    }, {})
+  );
 
   // Get the current date
   const currentDate = new Date();
@@ -222,7 +234,7 @@ const App = () => {
 
   const saveAsPNG = () => {
     const calendarContainer = document.getElementById("calendar-container");
-  
+
     html2canvas(calendarContainer, {
       backgroundColor: "white", // Ensure a white background for the calendar
       useCORS: true,           // Allow cross-origin images to be included
@@ -238,7 +250,7 @@ const App = () => {
       console.error("Error generating PNG:", error);
     });
   };
-  
+
   // Auto-roster therapists when the button is clicked
   const autoRoster = () => {
     setCalendar((prevCalendar) => {
@@ -250,8 +262,25 @@ const App = () => {
 
       updatedCalendar[currentMonth] = updatedCalendar[currentMonth].map((day) => {
         const isWeekend = day.date.getDay() === 0 || day.date.getDay() === 6;
-        if (day.therapists.length === 0 && !blockedDays.includes(day.dayKey) && !isWeekend) {
-          day.therapists.push(shuffledTherapists[therapistIndex]);
+        const dayOfWeek = day.date.toLocaleString('default', { weekday: 'long' });
+
+        // Check if the therapist is working from home on this day
+        if (
+          day.therapists.length === 0 &&
+          !blockedDays.includes(day.dayKey) &&
+          !isWeekend
+        ) {
+          // Get the current therapist
+          let currentTherapist = shuffledTherapists[therapistIndex];
+
+          // Check if this therapist is working from home on this day
+          while (workingFromHome[currentTherapist][dayOfWeek]) {
+            therapistIndex = (therapistIndex + 1) % shuffledTherapists.length;
+            currentTherapist = shuffledTherapists[therapistIndex];
+          }
+
+          // Assign therapist to the day
+          day.therapists.push(currentTherapist);
           therapistIndex = (therapistIndex + 1) % shuffledTherapists.length;
         }
         return day;
@@ -263,6 +292,29 @@ const App = () => {
     setAutoRosterTriggered(true);
   };
 
+  const buttonStyle = {
+    padding: '8px 16px',
+    background: '#f4f4f7',
+    color: '#333',
+    border: '1px solid #ddd',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontWeight: '500',
+    transition: 'background 0.2s',
+    marginRight: '10px', // Ensure buttons are spaced out a bit
+  };
+
+  const changeMonth = (direction) => {
+    setCurrentMonth((prevMonth) => {
+      if (direction === 'next') {
+        return (prevMonth + 1) % 12; // Go to next month
+      } else if (direction === 'prev') {
+        return (prevMonth - 1 + 12) % 12; // Go to previous month
+      }
+      return prevMonth;
+    });
+  };
+
   return (
     <DndProvider backend={HTML5Backend}>
       <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: '20px' }}>
@@ -271,112 +323,83 @@ const App = () => {
           {therapists.map((name, index) => (
             <Therapist key={index} name={name} />
           ))}
+          
+          {/* Set Working From Home Days */}
+          <h3>Set Working from Home Days</h3>
+          {therapists.map((therapist, index) => (
+            <div key={index}>
+              <h4>{therapist}</h4>
+              {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => (
+                <label key={day}>
+                  <input
+                    type="checkbox"
+                    checked={workingFromHome[therapist][day]}
+                    onChange={() => {
+                      setWorkingFromHome((prev) => ({
+                        ...prev,
+                        [therapist]: {
+                          ...prev[therapist],
+                          [day]: !prev[therapist][day],
+                        },
+                      }));
+                    }}
+                  />
+                  {day}
+                </label>
+              ))}
+            </div>
+          ))}
         </div>
 
-        <div>
-          <h2>2025 Calendar - {calendar[currentMonth][0].date.toLocaleString('default', { month: 'long' })}</h2>
-          <div>
-            <div style={{ marginBottom: '10px' }}>
-              <button
-                onClick={() => setCurrentMonth((prev) => (prev === 0 ? 11 : prev - 1))}
-                style={{
-                  padding: '8px 16px',
-                  background: '#f4f4f7',
-                  color: '#333',
-                  border: '1px solid #ddd',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontWeight: '500',
-                  transition: 'background 0.2s',
-                }}
-              >
-                ← Previous
-              </button>
-              <button
-                onClick={() => setCurrentMonth((prev) => (prev === 11 ? 0 : prev + 1))}
-                style={{
-                  padding: '8px 16px',
-                  background: '#f4f4f7',
-                  color: '#333',
-                  border: '1px solid #ddd',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontWeight: '500',
-                  transition: 'background 0.2s',
-                }}
-              >
-                Next →
-              </button>
-            </div>
+        {/* Calendar */}
+        <div id="calendar-container" style={{ width: '50%' }}>
+          <h2>Calendar for {calendar[currentMonth][0].date.toLocaleString("default", { month: "long" })}</h2>
 
-            <button
+          {/* Month navigation buttons */}
+          <button
+            style={buttonStyle}
+            onClick={() => changeMonth('prev')}
+          >
+            Previous
+          </button>
+          <button
+            style={buttonStyle}
+            onClick={() => changeMonth('next')}
+          >
+            Next
+          </button>
+
+          <Calendar 
+            monthDays={calendar[currentMonth]} 
+            moveTherapist={moveTherapist} 
+            removeTherapist={removeTherapist} 
+            todayDate={todayDate}
+          />
+          <div style={{ marginTop: '20px' }}>
+            <button 
+              style={buttonStyle} 
+              onClick={goToToday}
+            >
+              Today
+            </button>
+            <button 
+              style={buttonStyle} 
+              onClick={autoRoster}
+            >
+              Auto Roster
+            </button>
+            <button 
+              style={buttonStyle} 
               onClick={resetCalendar}
-              style={{
-                padding: '8px 16px',
-                background: '#f4f4f7',
-                color: '#333',
-                border: '1px solid #ddd',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontWeight: '500',
-                transition: 'background 0.2s',
-                marginBottom: '20px',
-              }}
             >
               Reset Calendar
             </button>
-            <button
+            <button 
+              style={buttonStyle} 
               onClick={saveAsPNG}
-              style={{
-                padding: '8px 16px',
-                background: '#f4f4f7',
-                color: '#333',
-                border: '1px solid #ddd',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontWeight: '500',
-                transition: 'background 0.2s',
-                marginBottom: '20px',
-              }}
             >
               Save as PNG
             </button>
-
-            <button
-              onClick={autoRoster}
-              style={{
-                padding: '8px 16px',
-                background: '#f4f4f7', // Pastel green
-                color: '#333',
-                border: '1px solid #ddd',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontWeight: '500',
-                transition: 'background 0.2s',
-                marginTop: '20px',
-              }}
-              disabled={autoRosterTriggered}
-            >
-              {autoRosterTriggered ? 'Auto Roster Completed' : 'Auto Roster'}
-            </button>
-
-            <div
-              id="calendar-container"
-              style={{
-                marginTop: '20px',
-                padding: '20px',
-                backgroundColor: '#f4f4f7',
-                borderRadius: '8px',
-                boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)',
-              }}
-            >
-              <Calendar
-                monthDays={calendar[currentMonth]}
-                moveTherapist={moveTherapist}
-                removeTherapist={removeTherapist}
-                todayDate={todayDate}
-              />
-            </div>
           </div>
         </div>
       </div>
@@ -385,6 +408,7 @@ const App = () => {
 };
 
 export default App;
+
 
 
 
