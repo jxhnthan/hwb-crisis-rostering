@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import html2canvas from 'html2canvas'; // Import html2canvas
+import html2canvas from 'html2canvas';
 
 // Define therapist names
 const therapists = [
@@ -12,11 +12,10 @@ const therapists = [
 
 // Blocked days (in YYYY-MM-DD format)
 const blockedDays = [
-  "2025-1-1", "2025-1-29", "2025-1-30", // New Year’s Day, Chinese New Year
-  "2025-3-31", "2025-4-18", "2025-5-1", // Hari Raya Puasa, Good Friday, Labour Day
-  "2025-5-12", "2025-6-7", "2025-8-9", // Vesak Day, Hari Raya Haji, National Day
-  "2025-3-28", "2025-10-25", // NUS Wellbeing Day
-  "2025-10-20", "2025-12-25"  // Deepavali, Christmas Day
+  "2025-1-1", "2025-1-29", "2025-1-30", 
+  "2025-3-31", "2025-4-18", "2025-5-1", 
+  "2025-5-12", "2025-6-7", "2025-8-9", 
+  "2025-3-28", "2025-10-25", "2025-10-20", "2025-12-25"
 ];
 
 // Helper function to get the dates for each month in 2025 with unique keys
@@ -33,7 +32,7 @@ const get2025Calendar = () => {
       const dayKey = `${2025}-${monthIndex + 1}-${dayIndex + 1}`; // Unique day identifier (YYYY-MM-DD)
       return {
         date,
-        dayKey, // Use dayKey as the unique identifier
+        dayKey,
         therapists: []
       };
     });
@@ -45,26 +44,62 @@ const get2025Calendar = () => {
 
 const calendarData = get2025Calendar(); // Initialize full 2025 calendar
 
-// Therapist Component (Draggable)
+// Therapist Component (Draggable with Left-Right Jiggle Effect)
 const Therapist = ({ name }) => {
   const [, drag] = useDrag(() => ({
     type: 'THERAPIST',
-    item: { name }
+    item: { name },
   }));
 
   return (
-    <div ref={drag} style={{ padding: '10px', margin: '5px', backgroundColor: 'lightblue', cursor: 'move' }}>
+    <div
+      ref={drag}
+      style={{
+        padding: '8px 12px',
+        margin: '5px',
+        backgroundColor: '#A8E6CF', // Pastel blue
+        cursor: 'move', // Indicates it's draggable
+        borderRadius: '20px', // Rounded corners for tag shape
+        fontWeight: 'bold',
+        color: '#333',
+        transition: 'transform 0.2s ease', // Smooth transition for movement
+      }}
+      onMouseEnter={(e) => {
+        // Trigger the jiggle effect
+        e.currentTarget.style.animation = 'jiggle 0.6s ease infinite';
+      }}
+      onMouseLeave={(e) => {
+        // Reset the animation when mouse leaves
+        e.currentTarget.style.animation = 'none';
+      }}
+    >
       {name}
     </div>
   );
 };
 
+// Define the CSS keyframes for the left-right jiggle effect
+const style = document.createElement('style');
+style.innerHTML = `
+  @keyframes jiggle {
+    0% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    50% { transform: translateX(5px); }
+    75% { transform: translateX(-3px); }
+    100% { transform: translateX(0); }
+  }
+`;
+document.head.appendChild(style);
+
 // Calendar Day (Drop Zone)
 const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked }) => {
+  const isWeekend = day.date.getDay() === 0 || day.date.getDay() === 6; // 0 = Sunday, 6 = Saturday
+  const finalBlockedStatus = isBlocked || isWeekend; // Combine blocked days and weekends
+
   const [, drop] = useDrop(() => ({
     accept: 'THERAPIST',
     drop: (item) => {
-      if (!isBlocked) {
+      if (!finalBlockedStatus) {
         moveTherapist(item.name, day.dayKey); // Only move if the day is not blocked
       }
     }
@@ -74,21 +109,42 @@ const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked }
     <div
       ref={drop}
       style={{
-        border: '1px solid #ddd',
         padding: '10px',
         minHeight: '80px',
         position: 'relative',
-        backgroundColor: isToday ? '#FFEB3B' : isBlocked ? '#D3D3D3' : 'white' // Highlight today's date or blocked days
+        backgroundColor: isToday 
+          ? '#FFEB3B' // Highlight today
+          : finalBlockedStatus 
+          ? '#B0BEC5' // Solid grey for blocked days
+          : 'white', // Normal color for non-blocked days
+        borderRadius: '0px', // Rounded corners
+        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
+        overflow: 'hidden', // Prevent border overflow
       }}
     >
       <strong>{day.date.toDateString()}</strong>
       {day.therapists.length > 0 ? (
         day.therapists.map((therapist, idx) => (
-          <div key={idx} style={{ padding: '5px', backgroundColor: 'lightgreen' }}>
+          <div
+            key={idx}
+            style={{
+              padding: '5px',
+              backgroundColor: '#D1F2E8', // Pastel green
+              borderRadius: '15px', // Rounded corners for therapist tag
+              margin: '5px 0',
+            }}
+          >
             {therapist}
-            <button 
-              onClick={() => removeTherapist(therapist, day.dayKey)} 
-              style={{ marginLeft: '10px', color: 'red', cursor: 'pointer' }}
+            <button
+              onClick={() => removeTherapist(therapist, day.dayKey)}
+              style={{
+                marginLeft: '10px',
+                color: 'red',
+                cursor: 'pointer',
+                background: 'transparent',
+                border: 'none',
+                fontWeight: 'bold',
+              }}
             >
               Remove
             </button>
@@ -109,13 +165,13 @@ const Calendar = ({ monthDays, moveTherapist, removeTherapist, todayDate }) => {
         const isToday = todayDate && day.date.toDateString() === todayDate.toDateString();
         const isBlocked = blockedDays.includes(day.dayKey); // Check if the day is blocked
         return (
-          <CalendarDay 
+          <CalendarDay
             key={day.dayKey}
             day={day}
-            moveTherapist={moveTherapist} 
-            removeTherapist={removeTherapist} 
-            isToday={isToday} 
-            isBlocked={isBlocked} // Pass isBlocked as a prop
+            moveTherapist={moveTherapist}
+            removeTherapist={removeTherapist}
+            isToday={isToday}
+            isBlocked={isBlocked}
           />
         );
       })}
@@ -125,8 +181,21 @@ const Calendar = ({ monthDays, moveTherapist, removeTherapist, todayDate }) => {
 
 const App = () => {
   const [currentMonth, setCurrentMonth] = useState(0); // Start with January (index 0)
-  const [calendar, setCalendar] = useState(calendarData); // Store entire calendar state
+  const [calendar, setCalendar] = useState(get2025Calendar()); // Initialize calendar state
   const [todayDate, setTodayDate] = useState(null); // For tracking today's date
+  const [autoRosterTriggered, setAutoRosterTriggered] = useState(false); // Track if Auto Roster was triggered
+  const [workingFromHome, setWorkingFromHome] = useState(
+    therapists.reduce((acc, therapist) => {
+      acc[therapist] = {
+        Monday: false,
+        Tuesday: false,
+        Wednesday: false,
+        Thursday: false,
+        Friday: false,
+      };
+      return acc;
+    }, {})
+  );
 
   // Get the current date
   const currentDate = new Date();
@@ -140,34 +209,12 @@ const App = () => {
     setTodayDate(new Date(currentYear, currentMonthIndex, currentDay)); // Set today's date
   };
 
-  // Auto-rostering logic that excludes blocked days
-  const assignTherapists = () => {
-    let therapistIndex = 0; // Start with the first therapist
-
-    // Loop through the days of the current month and assign therapists
-    setCalendar(prevCalendar => {
-      const updatedCalendar = prevCalendar.map((month, index) => {
-        if (index === currentMonth) {
-          return month.map(day => {
-            if (!blockedDays.includes(day.dayKey) && day.therapists.length === 0) {
-              day.therapists.push(therapists[therapistIndex]); // Assign therapist to available day
-              therapistIndex = (therapistIndex + 1) % therapists.length; // Move to next therapist
-            }
-            return day;
-          });
-        }
-        return month;
-      });
-      return updatedCalendar;
-    });
-  };
-
   // Handle moving a therapist into a calendar day
   const moveTherapist = (name, dayKey) => {
-    setCalendar(prevCalendar => {
+    setCalendar((prevCalendar) => {
       const updatedCalendar = prevCalendar.map((month, index) => {
         if (index === currentMonth) {
-          return month.map(day => {
+          return month.map((day) => {
             if (day.dayKey === dayKey && !blockedDays.includes(dayKey)) {
               if (!day.therapists.includes(name)) {
                 return { ...day, therapists: [...day.therapists, name] };
@@ -184,12 +231,12 @@ const App = () => {
 
   // Handle removing a therapist from a calendar day
   const removeTherapist = (name, dayKey) => {
-    setCalendar(prevCalendar => {
+    setCalendar((prevCalendar) => {
       const updatedCalendar = prevCalendar.map((month, index) => {
         if (index === currentMonth) {
-          return month.map(day => {
+          return month.map((day) => {
             if (day.dayKey === dayKey) {
-              return { ...day, therapists: day.therapists.filter(therapist => therapist !== name) };
+              return { ...day, therapists: day.therapists.filter((therapist) => therapist !== name) };
             }
             return day;
           });
@@ -200,19 +247,92 @@ const App = () => {
     });
   };
 
+  // Reset the calendar to its original unassigned state
   const resetCalendar = () => {
-    setCalendar(get2025Calendar()); // Call get2025Calendar to regenerate the calendar with the initial unassigned state
+    setCalendar(get2025Calendar()); // Reset the calendar state to its initial state
+    setAutoRosterTriggered(false); // Reset auto roster trigger
   };
-  
 
-  // Function to save the calendar as PNG
   const saveAsPNG = () => {
-    html2canvas(document.querySelector("#calendar-container")).then((canvas) => {
+    const calendarContainer = document.getElementById("calendar-container");
+
+    html2canvas(calendarContainer, {
+      backgroundColor: "white", // Ensure a white background for the calendar
+      useCORS: true,           // Allow cross-origin images to be included
+      scale: 2                 // Higher resolution for better image quality
+    }).then((canvas) => {
       const imgData = canvas.toDataURL("image/png");
-      const link = document.createElement('a');
+      const link = document.createElement("a");
+      const currentMonthName = calendar[currentMonth][0].date.toLocaleString("default", { month: "long" });
       link.href = imgData;
-      link.download = 'calendar.png'; // Set the name of the file
+      link.download = `Therapist_Roster_${currentMonthName}_2025.png`;
       link.click(); // Trigger the download
+    }).catch((error) => {
+      console.error("Error generating PNG:", error);
+    });
+  };
+
+  // Auto-roster therapists when the button is clicked
+  const autoRoster = () => {
+    setCalendar((prevCalendar) => {
+      const updatedCalendar = [...prevCalendar];
+
+      // Shuffle therapists for better distribution
+      const shuffledTherapists = [...therapists].sort(() => Math.random() - 0.5);
+      let therapistIndex = 0;
+
+      updatedCalendar[currentMonth] = updatedCalendar[currentMonth].map((day) => {
+        const isWeekend = day.date.getDay() === 0 || day.date.getDay() === 6;
+        const dayOfWeek = day.date.toLocaleString('default', { weekday: 'long' });
+
+        // Check if the therapist is working from home on this day
+        if (
+          day.therapists.length === 0 &&
+          !blockedDays.includes(day.dayKey) &&
+          !isWeekend
+        ) {
+          // Get the current therapist
+          let currentTherapist = shuffledTherapists[therapistIndex];
+
+          // Check if this therapist is working from home on this day
+          while (workingFromHome[currentTherapist][dayOfWeek]) {
+            therapistIndex = (therapistIndex + 1) % shuffledTherapists.length;
+            currentTherapist = shuffledTherapists[therapistIndex];
+          }
+
+          // Assign therapist to the day
+          day.therapists.push(currentTherapist);
+          therapistIndex = (therapistIndex + 1) % shuffledTherapists.length;
+        }
+        return day;
+      });
+
+      return updatedCalendar;
+    });
+
+    setAutoRosterTriggered(true);
+  };
+
+  const buttonStyle = {
+    padding: '8px 16px',
+    background: '#f4f4f7',
+    color: '#333',
+    border: '1px solid #ddd',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontWeight: '500',
+    transition: 'background 0.2s',
+    marginRight: '10px', // Ensure buttons are spaced out a bit
+  };
+
+  const changeMonth = (direction) => {
+    setCurrentMonth((prevMonth) => {
+      if (direction === 'next') {
+        return (prevMonth + 1) % 12; // Go to next month
+      } else if (direction === 'prev') {
+        return (prevMonth - 1 + 12) % 12; // Go to previous month
+      }
+      return prevMonth;
     });
   };
 
@@ -224,26 +344,83 @@ const App = () => {
           {therapists.map((name, index) => (
             <Therapist key={index} name={name} />
           ))}
+          
+          {/* Set Working From Home Days */}
+          <h3>Set Working from Home Days</h3>
+          {therapists.map((therapist, index) => (
+            <div key={index}>
+              <h4>{therapist}</h4>
+              {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => (
+                <label key={day}>
+                  <input
+                    type="checkbox"
+                    checked={workingFromHome[therapist][day]}
+                    onChange={() => {
+                      setWorkingFromHome((prev) => ({
+                        ...prev,
+                        [therapist]: {
+                          ...prev[therapist],
+                          [day]: !prev[therapist][day],
+                        },
+                      }));
+                    }}
+                  />
+                  {day}
+                </label>
+              ))}
+            </div>
+          ))}
         </div>
 
-        <div>
-          <h2>2025 Calendar - {calendar[currentMonth][0].date.toLocaleString('default', { month: 'long' })}</h2>
-          <div>
-            <button onClick={() => setCurrentMonth((prev) => (prev === 0 ? 11 : prev - 1))} style={{ marginRight: '10px' }}>←</button>
-            <button onClick={() => setCurrentMonth((prev) => (prev === 11 ? 0 : prev + 1))} style={{ marginLeft: '10px' }}>→</button>
-            <button onClick={goToToday} style={{ marginLeft: '20px' }}>Today</button>
-            <button onClick={resetCalendar} style={{ marginLeft: '20px' }}>Reset Calendar</button>
-            <button onClick={saveAsPNG} style={{ marginLeft: '20px' }}>Save as PNG</button>
-            <button onClick={assignTherapists} style={{ marginLeft: '20px' }}>Auto-Roster</button>
-          </div>
+        {/* Calendar */}
+        <div id="calendar-container" style={{ width: '50%' }}>
+          <h2>Calendar for {calendar[currentMonth][0].date.toLocaleString("default", { month: "long" })}</h2>
 
-          <div id="calendar-container">
-            <Calendar 
-              monthDays={calendar[currentMonth]} 
-              moveTherapist={moveTherapist} 
-              removeTherapist={removeTherapist} 
-              todayDate={todayDate} 
-            />
+          {/* Month navigation buttons */}
+          <button
+            style={buttonStyle}
+            onClick={() => changeMonth('prev')}
+          >
+            Previous
+          </button>
+          <button
+            style={buttonStyle}
+            onClick={() => changeMonth('next')}
+          >
+            Next
+          </button>
+
+          <Calendar 
+            monthDays={calendar[currentMonth]} 
+            moveTherapist={moveTherapist} 
+            removeTherapist={removeTherapist} 
+            todayDate={todayDate}
+          />
+          <div style={{ marginTop: '20px' }}>
+            <button 
+              style={buttonStyle} 
+              onClick={goToToday}
+            >
+              Today
+            </button>
+            <button 
+              style={buttonStyle} 
+              onClick={autoRoster}
+            >
+              Auto Roster
+            </button>
+            <button 
+              style={buttonStyle} 
+              onClick={resetCalendar}
+            >
+              Reset Calendar
+            </button>
+            <button 
+              style={buttonStyle} 
+              onClick={saveAsPNG}
+            >
+              Save as PNG
+            </button>
           </div>
         </div>
       </div>
