@@ -324,31 +324,43 @@ const App = () => {
             <Therapist key={index} name={name} />
           ))}
           
-          {/* Set Working From Home Days */}
-          <h3>Set Working from Home Days</h3>
-          {therapists.map((therapist, index) => (
-            <div key={index}>
-              <h4>{therapist}</h4>
-              {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => (
-                <label key={day}>
-                  <input
-                    type="checkbox"
-                    checked={workingFromHome[therapist][day]}
-                    onChange={() => {
-                      setWorkingFromHome((prev) => ({
-                        ...prev,
-                        [therapist]: {
-                          ...prev[therapist],
-                          [day]: !prev[therapist][day],
-                        },
-                      }));
-                    }}
-                  />
-                  {day}
-                </label>
-              ))}
-            </div>
+          <div style={{ marginTop: '20px' }}>
+  <h3>Set Working from Home Days</h3>
+  <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+    <thead>
+      <tr>
+        <th style={{ border: '1px solid #ccc', padding: '8px' }}>Therapist</th>
+        {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => (
+          <th key={day} style={{ border: '1px solid #ccc', padding: '8px' }}>{day}</th>
+        ))}
+      </tr>
+    </thead>
+    <tbody>
+      {therapists.map((therapist) => (
+        <tr key={therapist}>
+          <td style={{ border: '1px solid #ccc', padding: '8px' }}>{therapist}</td>
+          {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => (
+            <td key={day} style={{ border: '1px solid #ccc', padding: '8px', textAlign: 'center' }}>
+              <input
+                type="checkbox"
+                checked={workingFromHome[therapist][day]}
+                onChange={() =>
+                  setWorkingFromHome((prev) => ({
+                    ...prev,
+                    [therapist]: {
+                      ...prev[therapist],
+                      [day]: !prev[therapist][day],
+                    },
+                  }))
+                }
+              />
+            </td>
           ))}
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
         </div>
 
         {/* Calendar */}
