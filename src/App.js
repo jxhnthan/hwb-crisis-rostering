@@ -44,28 +44,54 @@ const get2025Calendar = () => {
 
 const calendarData = get2025Calendar(); // Initialize full 2025 calendar
 
-// Therapist Component (Draggable)
 const Therapist = ({ name }) => {
   const [, drag] = useDrag(() => ({
     type: 'THERAPIST',
     item: { name },
   }));
 
+  const initials = name
+    .split(' ')
+    .map((word) => word[0])
+    .join('')
+    .toUpperCase();
+
   return (
     <div
       ref={drag}
       style={{
-        padding: '8px 12px',
-        margin: '5px',
-        backgroundColor: '#A8E6CF', // Pastel blue
-        cursor: 'move',
-        borderRadius: '20px', // Rounded corners for tag shape
-        fontWeight: 'bold',
-        color: '#333',
-        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '10px',
+        padding: '10px 14px',
+        margin: '6px 0',
+        backgroundColor: '#E0F7FA',
+        borderRadius: '999px',
+        fontWeight: '500',
+        color: '#00796B',
+        boxShadow: '0 2px 6px rgba(0, 0, 0, 0.08)',
+        cursor: 'grab',
+        transition: 'background 0.2s, transform 0.1s',
       }}
+      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#B2EBF2')}
+      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#E0F7FA')}
     >
-      {name}
+      <div
+        style={{
+          backgroundColor: '#00796B',
+          color: 'white',
+          borderRadius: '50%',
+          width: '28px',
+          height: '28px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '0.8rem',
+        }}
+      >
+        {initials}
+      </div>
+      <span>{name}</span>
     </div>
   );
 };
