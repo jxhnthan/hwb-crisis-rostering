@@ -202,6 +202,14 @@ const App = () => {
     }, {})
   );
 
+  // Count assigned days per therapist for the current month
+const assignmentCounts = therapists.reduce((acc, therapist) => {
+  acc[therapist] = calendar[currentMonth].filter((day) =>
+    day.therapists.includes(therapist)
+  ).length;
+  return acc;
+}, {});
+
   // Get the current date
   const currentDate = new Date();
   const currentDay = currentDate.getDate();
@@ -351,6 +359,7 @@ const App = () => {
           ))}
           
           <div style={{ marginTop: '20px' }}>
+
   <h3>Set Working from Home Days</h3>
   <table style={{ borderCollapse: 'collapse', width: '100%' }}>
     <thead>
@@ -386,6 +395,31 @@ const App = () => {
       ))}
     </tbody>
   </table>
+</div>
+
+<div style={{ marginTop: '30px' }}>
+  <h3>Therapist Assignment Tracker</h3>
+  <div style={{
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, 1fr)',
+    gap: '10px',
+    marginTop: '10px'
+  }}>
+    {Object.entries(assignmentCounts).map(([therapist, count]) => (
+      <div
+        key={therapist}
+        style={{
+          padding: '10px',
+          backgroundColor: '#E3F2FD',
+          borderRadius: '12px',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.1)'
+        }}
+      >
+        <strong>{therapist}</strong><br />
+        <span>Assigned Days: {count}</span>
+      </div>
+    ))}
+  </div>
 </div>
         </div>
 
@@ -446,6 +480,7 @@ const App = () => {
 };
 
 export default App;
+
 
 
 
