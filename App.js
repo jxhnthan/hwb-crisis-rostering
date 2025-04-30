@@ -44,7 +44,7 @@ const get2025Calendar = () => {
 
 const calendarData = get2025Calendar(); // Initialize full 2025 calendar
 
-// Therapist Component (Draggable with Left-Right Jiggle Effect)
+// Therapist Component (Draggable)
 const Therapist = ({ name }) => {
   const [, drag] = useDrag(() => ({
     type: 'THERAPIST',
@@ -58,38 +58,17 @@ const Therapist = ({ name }) => {
         padding: '8px 12px',
         margin: '5px',
         backgroundColor: '#A8E6CF', // Pastel blue
-        cursor: 'move', // Indicates it's draggable
+        cursor: 'move',
         borderRadius: '20px', // Rounded corners for tag shape
         fontWeight: 'bold',
         color: '#333',
-        transition: 'transform 0.2s ease', // Smooth transition for movement
-      }}
-      onMouseEnter={(e) => {
-        // Trigger the jiggle effect
-        e.currentTarget.style.animation = 'jiggle 0.6s ease infinite';
-      }}
-      onMouseLeave={(e) => {
-        // Reset the animation when mouse leaves
-        e.currentTarget.style.animation = 'none';
+        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
       }}
     >
       {name}
     </div>
   );
 };
-
-// Define the CSS keyframes for the left-right jiggle effect
-const style = document.createElement('style');
-style.innerHTML = `
-  @keyframes jiggle {
-    0% { transform: translateX(0); }
-    25% { transform: translateX(-5px); }
-    50% { transform: translateX(5px); }
-    75% { transform: translateX(-3px); }
-    100% { transform: translateX(0); }
-  }
-`;
-document.head.appendChild(style);
 
 // Calendar Day (Drop Zone)
 const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked }) => {
@@ -345,31 +324,43 @@ const App = () => {
             <Therapist key={index} name={name} />
           ))}
           
-          {/* Set Working From Home Days */}
-          <h3>Set Working from Home Days</h3>
-          {therapists.map((therapist, index) => (
-            <div key={index}>
-              <h4>{therapist}</h4>
-              {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => (
-                <label key={day}>
-                  <input
-                    type="checkbox"
-                    checked={workingFromHome[therapist][day]}
-                    onChange={() => {
-                      setWorkingFromHome((prev) => ({
-                        ...prev,
-                        [therapist]: {
-                          ...prev[therapist],
-                          [day]: !prev[therapist][day],
-                        },
-                      }));
-                    }}
-                  />
-                  {day}
-                </label>
-              ))}
-            </div>
+          <div style={{ marginTop: '20px' }}>
+  <h3>Set Working from Home Days</h3>
+  <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+    <thead>
+      <tr>
+        <th style={{ border: '1px solid #ccc', padding: '8px' }}>Therapist</th>
+        {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => (
+          <th key={day} style={{ border: '1px solid #ccc', padding: '8px' }}>{day}</th>
+        ))}
+      </tr>
+    </thead>
+    <tbody>
+      {therapists.map((therapist) => (
+        <tr key={therapist}>
+          <td style={{ border: '1px solid #ccc', padding: '8px' }}>{therapist}</td>
+          {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => (
+            <td key={day} style={{ border: '1px solid #ccc', padding: '8px', textAlign: 'center' }}>
+              <input
+                type="checkbox"
+                checked={workingFromHome[therapist][day]}
+                onChange={() =>
+                  setWorkingFromHome((prev) => ({
+                    ...prev,
+                    [therapist]: {
+                      ...prev[therapist],
+                      [day]: !prev[therapist][day],
+                    },
+                  }))
+                }
+              />
+            </td>
           ))}
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
         </div>
 
         {/* Calendar */}
