@@ -351,7 +351,7 @@ const assignmentCounts = therapists.reduce((acc, therapist) => {
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: '20px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: '20px', paddingBottom: '80px'}}>
         <div>
           <h2>Therapists</h2>
           {therapists.map((name, index) => (
