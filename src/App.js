@@ -7,7 +7,8 @@ import html2canvas from 'html2canvas';
 // Define therapist names
 const therapists = [
   "Dominic Yeo", "Kirsty Png", "Soon Jiaying", 
-  "Andrew Lim", "Janice Leong", "Oliver Tan"
+  "Andrew Lim", "Janice Leong", "Oliver Tan",
+  "Claudia Ahl", "Seanna Neo", "Xiao Hui"
 ];
 
 // Blocked days (in YYYY-MM-DD format)
