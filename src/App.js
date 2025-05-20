@@ -428,17 +428,18 @@ const assignmentCounts = therapists.reduce((acc, therapist) => {
     setAutoRosterTriggered(true);
   };
 
-  const buttonStyle = {
-    padding: '8px 16px',
-    background: '#f4f4f7',
-    color: '#333',
-    border: '1px solid #ddd',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontWeight: '500',
-    transition: 'background 0.2s',
-    marginRight: '10px', // Ensure buttons are spaced out a bit
-  };
+const buttonStyle = {
+  padding: '10px 18px', // Slightly more padding
+  background: '#FFFFFF', // White background
+  color: '#4A5568',      // Muted text color
+  border: '1px solid #CBD5E0', // Light grey border
+  borderRadius: '6px',    // Softer corners
+  cursor: 'pointer',
+  fontWeight: '500',
+  transition: 'background-color 0.2s, box-shadow 0.2s',
+  boxShadow: '0 1px 2px rgba(0,0,0,0.03)', // Subtle shadow
+  // marginRight: '10px', // Remove this, use gap in flex container
+};
 
   const changeMonth = (direction) => {
     setCurrentMonth((prevMonth) => {
