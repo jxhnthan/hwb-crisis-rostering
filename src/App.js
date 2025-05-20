@@ -99,65 +99,133 @@ const Therapist = ({ name }) => {
 
 // Calendar Day (Drop Zone)
 const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked }) => {
-  const isWeekend = day.date.getDay() === 0 || day.date.getDay() === 6; // 0 = Sunday, 6 = Saturday
-  const finalBlockedStatus = isBlocked || isWeekend; // Combine blocked days and weekends
+  const isWeekend = day.date.getDay() === 0 || day.date.getDay() === 6;
+  const finalBlockedStatus = isBlocked || isWeekend;
 
-  const [, drop] = useDrop(() => ({
+  const [{ isOver, canDrop }, drop] = useDrop(() => ({ // Add isOver and canDrop
     accept: 'THERAPIST',
     drop: (item) => {
       if (!finalBlockedStatus) {
-        moveTherapist(item.name, day.dayKey); // Only move if the day is not blocked
+        moveTherapist(item.name, day.dayKey);
       }
-    }
+    },
+    canDrop: () => !finalBlockedStatus, // Prevent dropping on blocked days
+    collect: (monitor) => ({
+      isOver: !!monitor.isOver(),
+      canDrop: !!monitor.canDrop(),
+    }),
   }));
+
+  const dayNumber = day.date.getDate();
+  const isCurrentMonth = new Date().getMonth() === day.date.getMonth() && new Date().getFullYear() === day.date.getFullYear(); // Optional: for styling non-current month days if you ever show them
+
+  let backgroundColor = '#FFFFFF'; // Default background
+  let textColor = '#333333';    // Default text color
+  let dayNumberColor = '#4A5568'; // Slightly muted day number
+
+  if (finalBlockedStatus) {
+    backgroundColor = '#F7FAFC'; // Very light grey for blocked/weekend
+    textColor = '#A0AEC0';       // Muted text for blocked
+    dayNumberColor = '#A0AEC0';
+  }
+  if (isToday) {
+    backgroundColor = '#E6FFFA'; // Light teal for today
+    dayNumberColor = '#2C7A7B';   // Stronger teal for today's number
+  }
+
+  // Style for when a therapist is being dragged over a droppable day
+  if (isOver && canDrop) {
+    backgroundColor = '#B2F5EA'; // Highlight when draggable is over
+  }
 
   return (
     <div
       ref={drop}
       style={{
-        padding: '10px',
-        minHeight: '80px',
+        padding: '8px',
+        minHeight: '120px', // Increased min-height for more space
         position: 'relative',
-        backgroundColor: isToday 
-          ? '#FFEB3B' // Highlight today
-          : finalBlockedStatus 
-          ? '#B0BEC5' // Solid grey for blocked days
-          : 'white', // Normal color for non-blocked days
-        borderRadius: '0px', // Rounded corners
-        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
-        overflow: 'hidden', // Prevent border overflow
+        backgroundColor: backgroundColor,
+        borderRadius: '6px', // Softer corners
+        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03)', // Softer shadow
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '6px', // Space between items inside the day cell
+        border: `1px solid ${isToday ? '#4FD1C5' : '#E2E8F0'}`, // Subtle border, emphasized for today
+        transition: 'background-color 0.2s ease-in-out',
       }}
     >
-      <strong>{day.date.toDateString()}</strong>
+      <strong
+        style={{
+          alignSelf: 'flex-end', // Position day number to top-right
+          fontSize: '0.85rem',
+          color: dayNumberColor,
+          backgroundColor: isToday ? '#B2F5EA' : 'transparent', // Optional: small bg circle for today's number
+          borderRadius: isToday ? '50%' : '0',
+          padding: isToday ? '2px 6px' : '0',
+          lineHeight: '1',
+        }}
+      >
+        {dayNumber}
+      </strong>
+
       {day.therapists.length > 0 ? (
         day.therapists.map((therapist, idx) => (
           <div
             key={idx}
             style={{
-              padding: '5px',
-              backgroundColor: '#D1F2E8', // Pastel green
-              borderRadius: '15px', // Rounded corners for therapist tag
-              margin: '5px 0',
+              fontSize: '0.8rem',
+              padding: '4px 8px',
+              backgroundColor: '#E6FFFA', // Consistent light teal for assigned
+              color: '#234E52',        // Darker teal text
+              borderRadius: '4px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
             }}
           >
-            {therapist}
+            <span>{therapist}</span>
             <button
               onClick={() => removeTherapist(therapist, day.dayKey)}
               style={{
-                marginLeft: '10px',
-                color: 'red',
+                marginLeft: '8px',
+                color: '#E53E3E', // Red for remove
                 cursor: 'pointer',
                 background: 'transparent',
                 border: 'none',
                 fontWeight: 'bold',
+                padding: '2px',
+                lineHeight: '1',
               }}
+              title={`Remove ${therapist}`} // Accessibility
             >
-              Remove
+              × {/* Use an 'x' icon (times symbol) */}
             </button>
           </div>
         ))
       ) : (
-        <div style={{ color: 'gray' }}>No therapist assigned</div>
+        !finalBlockedStatus && ( // Only show placeholder if not blocked
+          <div style={{
+            fontSize: '0.75rem',
+            color: '#A0AEC0',
+            textAlign: 'center',
+            marginTop: 'auto', // Push to bottom if cell expands
+            marginBottom: 'auto'
+          }}>
+            Empty
+          </div>
+        )
+      )}
+      {finalBlockedStatus && !isToday && ( // Label for blocked/weekend if not today
+         <div style={{
+            fontSize: '0.7rem',
+            color: '#718096',
+            textAlign: 'center',
+            marginTop: 'auto',
+            marginBottom: 'auto'
+          }}>
+            {isWeekend && !blockedDays.includes(day.dayKey) ? 'Weekend' : 'Blocked'}
+         </div>
       )}
     </div>
   );
