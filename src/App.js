@@ -233,23 +233,56 @@ const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked }
 
 // Calendar Grid Component
 const Calendar = ({ monthDays, moveTherapist, removeTherapist, todayDate }) => {
+  const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  // Get the first day of the month to determine padding needed for the grid
+  const firstDayOfMonth = monthDays.length > 0 ? monthDays[0].date.getDay() : 0;
+
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '10px', marginTop: '20px' }}>
-      {monthDays.map((day) => {
-        const isToday = todayDate && day.date.toDateString() === todayDate.toDateString();
-        const isBlocked = blockedDays.includes(day.dayKey); // Check if the day is blocked
-        return (
-          <CalendarDay
-            key={day.dayKey}
-            day={day}
-            moveTherapist={moveTherapist}
-            removeTherapist={removeTherapist}
-            isToday={isToday}
-            isBlocked={isBlocked}
-          />
-        );
-      })}
-    </div>
+    <>
+      {/* Day of Week Headers */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(7, 1fr)',
+        gap: '8px', // Slightly reduced gap to match cell padding
+        marginTop: '20px',
+        marginBottom: '8px', // Space before actual calendar days
+        fontWeight: '600',
+        color: '#4A5568',
+        textAlign: 'center',
+      }}>
+        {daysOfWeek.map(dayName => <div key={dayName}>{dayName}</div>)}
+      </div>
+
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(7, 1fr)',
+        gap: '8px', // Consistent gap
+      }}>
+        {/* Add empty divs for padding if the month doesn't start on Sunday */}
+        {Array.from({ length: firstDayOfMonth }).map((_, index) => (
+          <div key={`empty-${index}`} style={{
+            backgroundColor: '#F7FAFC', // Match blocked background or even lighter
+            borderRadius: '6px',
+            minHeight: '120px', // Match CalendarDay minHeight
+          }} />
+        ))}
+        {monthDays.map((day) => {
+          const isToday = todayDate && day.date.toDateString() === todayDate.toDateString();
+          const isBlocked = blockedDays.includes(day.dayKey);
+          return (
+            <CalendarDay
+              key={day.dayKey}
+              day={day}
+              moveTherapist={moveTherapist}
+              removeTherapist={removeTherapist}
+              isToday={isToday}
+              isBlocked={isBlocked}
+            />
+          );
+        })}
+      </div>
+    </>
   );
 };
 
