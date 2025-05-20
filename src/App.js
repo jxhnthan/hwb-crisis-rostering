@@ -384,41 +384,77 @@ const App = () => {
     });
   };
 
-  const autoRoster = () => {
-    setCalendar((prevCalendar) => {
-      const updatedCalendar = [...prevCalendar];
-      const shuffledTherapists = [...therapists].sort(() => Math.random() - 0.5);
-      let therapistIndex = 0;
+const autoRoster = () => {
+  setCalendar((prevCalendar) => {
+    const updatedCalendar = [...prevCalendar]; // Shallow copy of months array
+    const currentMonthData = [...updatedCalendar[currentMonth]]; // Shallow copy of current month's days
 
-      updatedCalendar[currentMonth] = updatedCalendar[currentMonth].map((day) => {
-        const dateObj = new Date(parseInt(day.dayKey.split('-')[0]), parseInt(day.dayKey.split('-')[1])-1, parseInt(day.dayKey.split('-')[2]));
-        const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
-        const dayOfWeek = dateObj.toLocaleString('default', { weekday: 'long' });
+    // 1. Initialize assignment counts for this rostering cycle (for the current month)
+    const monthlyAssignmentCounts = therapists.reduce((acc, therapist) => {
+      acc[therapist] = 0;
+      return acc;
+    }, {});
 
-        if (
-          day.therapists.length === 0 &&
-          !blockedDays.includes(day.dayKey) &&
-          !isWeekend
-        ) {
-          let assignedThisDay = false;
-          for (let i = 0; i < shuffledTherapists.length; i++) {
-            const potentialTherapistIndex = (therapistIndex + i) % shuffledTherapists.length;
-            const potentialTherapist = shuffledTherapists[potentialTherapistIndex];
+    // Create a list of therapists that can be sorted by assignment count
+    let availableTherapists = [...therapists];
 
-            if (!workingFromHome[potentialTherapist] || !workingFromHome[potentialTherapist][dayOfWeek]) { // Check if WFH entry exists
-              day.therapists.push(potentialTherapist);
-              therapistIndex = (potentialTherapistIndex + 1) % shuffledTherapists.length;
-              assignedThisDay = true;
-              break;
-            }
+    // 2. Iterate through each day of the current month
+    const newMonthDays = currentMonthData.map((day) => {
+      // Create a new day object to avoid mutating the original day from prevCalendar directly in the map
+      const newDay = { ...day, therapists: [...day.therapists] };
+
+      const isWeekend = newDay.date.getDay() === 0 || newDay.date.getDay() === 6;
+      const dayOfWeek = newDay.date.toLocaleString('default', { weekday: 'long' });
+
+      if (
+        newDay.therapists.length === 0 && // Only assign if no one is already there
+        !blockedDays.includes(newDay.dayKey) &&
+        !isWeekend
+      ) {
+        // 3. Sort available therapists:
+        //    - Primary: Ascending by their current monthlyAssignmentCounts.
+        //    - Secondary (tie-breaker): You could use a fixed order, a shuffle then sort,
+        //      or track who was "last picked" from the equally-counted group.
+        //      For simplicity here, we'll just sort by name as a consistent tie-breaker after shuffling the initial list once.
+        //      A more robust tie-breaker might involve a "last assigned timestamp" or round-robin index.
+
+        availableTherapists.sort((a, b) => {
+          // Primary sort: by number of assignments this month
+          const countDiff = monthlyAssignmentCounts[a] - monthlyAssignmentCounts[b];
+          if (countDiff !== 0) {
+            return countDiff;
+          }
+          // Secondary sort (tie-breaker): could be alphabetical or a pre-shuffled order
+          return a.localeCompare(b); // Simple alphabetical tie-breaker
+        });
+
+        let assignedThisDay = false;
+        for (const therapist of availableTherapists) {
+          if (!workingFromHome[therapist] || !workingFromHome[therapist][dayOfWeek]) {
+            newDay.therapists = [therapist]; // Assign the therapist
+            monthlyAssignmentCounts[therapist]++; // Increment their count for this month
+            assignedThisDay = true;
+
+            // Optional: To ensure the *next* day doesn't pick the same therapist again if counts are still tied,
+            // you could "move this therapist to the back of the queue" for the next iteration
+            // by re-sorting or by managing a separate queue.
+            // For now, the primary sort by count will naturally try to pick others next.
+            break; // Move to the next day
           }
         }
-        return day;
-      });
-      return updatedCalendar;
+        if (!assignedThisDay) {
+          // console.warn(`Could not assign therapist to ${newDay.dayKey} - all available are WFH or other constraints.`);
+        }
+      }
+      return newDay; // Return the modified or original day
     });
-    setAutoRosterTriggered(true);
-  };
+
+    updatedCalendar[currentMonth] = newMonthDays; // Put the updated days back into the calendar
+    return updatedCalendar;
+  });
+
+  setAutoRosterTriggered(true);
+};
 
   const buttonStyle = {
     padding: '10px 18px',
