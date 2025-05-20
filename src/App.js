@@ -287,53 +287,48 @@ const Calendar = ({ monthDays, moveTherapist, removeTherapist, todayDate }) => {
 };
 
 const App = () => {
-  const [currentMonth, setCurrentMonth] = useState(0); // Start with January (index 0)
-  const [calendar, setCalendar] = useState(get2025Calendar()); // Initialize calendar state
-  const [todayDate, setTodayDate] = useState(null); // For tracking today's date
-  const [autoRosterTriggered, setAutoRosterTriggered] = useState(false); // Track if Auto Roster was triggered
+  const [currentMonth, setCurrentMonth] = useState(0);
+  const [calendar, setCalendar] = useState(get2025Calendar());
+  const [todayDate, setTodayDate] = useState(null);
+  const [autoRosterTriggered, setAutoRosterTriggered] = useState(false);
   const [workingFromHome, setWorkingFromHome] = useState(
     therapists.reduce((acc, therapist) => {
       acc[therapist] = {
-        Monday: false,
-        Tuesday: false,
-        Wednesday: false,
-        Thursday: false,
-        Friday: false,
+        Monday: false, Tuesday: false, Wednesday: false, Thursday: false, Friday: false,
       };
       return acc;
     }, {})
   );
 
-  // Count assigned days per therapist for the current month
-const assignmentCounts = therapists.reduce((acc, therapist) => {
-  acc[therapist] = calendar[currentMonth].filter((day) =>
-    day.therapists.includes(therapist)
-  ).length;
-  return acc;
-}, {});
+  const assignmentCounts = therapists.reduce((acc, therapist) => {
+    acc[therapist] = calendar[currentMonth].filter((day) =>
+      day.therapists.includes(therapist)
+    ).length;
+    return acc;
+  }, {});
 
-  // Get the current date
   const currentDate = new Date();
   const currentDay = currentDate.getDate();
   const currentMonthIndex = currentDate.getMonth();
   const currentYear = currentDate.getFullYear();
 
-  // Set today's date when "Today" button is clicked
   const goToToday = () => {
-    setCurrentMonth(currentMonthIndex); // Set to current month
-    setTodayDate(new Date(currentYear, currentMonthIndex, currentDay)); // Set today's date
+    setCurrentMonth(currentMonthIndex);
+    setTodayDate(new Date(currentYear, currentMonthIndex, currentDay));
   };
 
-  // Handle moving a therapist into a calendar day
   const moveTherapist = (name, dayKey) => {
     setCalendar((prevCalendar) => {
       const updatedCalendar = prevCalendar.map((month, index) => {
         if (index === currentMonth) {
           return month.map((day) => {
-            if (day.dayKey === dayKey && !blockedDays.includes(dayKey)) {
-              if (!day.therapists.includes(name)) {
-                return { ...day, therapists: [...day.therapists, name] };
-              }
+            if (day.dayKey === dayKey && !blockedDays.includes(dayKey) && !day.therapists.includes(name)) {
+                // Check if the day is a weekend
+                const dateObj = new Date(day.dayKey.split('-')[0], day.dayKey.split('-')[1]-1, day.dayKey.split('-')[2]);
+                const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
+                if (!isWeekend) { // Only add if not a weekend
+                    return { ...day, therapists: [...day.therapists, name] };
+                }
             }
             return day;
           });
@@ -343,15 +338,15 @@ const assignmentCounts = therapists.reduce((acc, therapist) => {
       return updatedCalendar;
     });
   };
+  
 
-  // Handle removing a therapist from a calendar day
   const removeTherapist = (name, dayKey) => {
     setCalendar((prevCalendar) => {
       const updatedCalendar = prevCalendar.map((month, index) => {
         if (index === currentMonth) {
           return month.map((day) => {
             if (day.dayKey === dayKey) {
-              return { ...day, therapists: day.therapists.filter((therapist) => therapist !== name) };
+              return { ...day, therapists: day.therapists.filter((t) => t !== name) };
             }
             return day;
           });
@@ -362,219 +357,263 @@ const assignmentCounts = therapists.reduce((acc, therapist) => {
     });
   };
 
-  // Reset the calendar to its original unassigned state
   const resetCalendar = () => {
-    setCalendar(get2025Calendar()); // Reset the calendar state to its initial state
-    setAutoRosterTriggered(false); // Reset auto roster trigger
+    setCalendar(get2025Calendar());
+    setAutoRosterTriggered(false);
   };
 
   const saveAsPNG = () => {
-    const calendarContainer = document.getElementById("calendar-container");
-
+    const calendarContainer = document.getElementById("calendar-container-content"); // Target the inner content for better PNG
+    if (!calendarContainer) {
+        console.error("Calendar container content not found for PNG export.");
+        return;
+    }
     html2canvas(calendarContainer, {
-      backgroundColor: "white", // Ensure a white background for the calendar
-      useCORS: true,           // Allow cross-origin images to be included
-      scale: 2                 // Higher resolution for better image quality
+      backgroundColor: "#FFFFFF", // Calendar content itself is white
+      useCORS: true,
+      scale: 2
     }).then((canvas) => {
       const imgData = canvas.toDataURL("image/png");
       const link = document.createElement("a");
       const currentMonthName = calendar[currentMonth][0].date.toLocaleString("default", { month: "long" });
       link.href = imgData;
       link.download = `Therapist_Roster_${currentMonthName}_2025.png`;
-      link.click(); // Trigger the download
+      link.click();
     }).catch((error) => {
       console.error("Error generating PNG:", error);
     });
   };
 
-  // Auto-roster therapists when the button is clicked
   const autoRoster = () => {
     setCalendar((prevCalendar) => {
       const updatedCalendar = [...prevCalendar];
-
-      // Shuffle therapists for better distribution
       const shuffledTherapists = [...therapists].sort(() => Math.random() - 0.5);
       let therapistIndex = 0;
 
       updatedCalendar[currentMonth] = updatedCalendar[currentMonth].map((day) => {
-        const isWeekend = day.date.getDay() === 0 || day.date.getDay() === 6;
-        const dayOfWeek = day.date.toLocaleString('default', { weekday: 'long' });
+        const dateObj = new Date(parseInt(day.dayKey.split('-')[0]), parseInt(day.dayKey.split('-')[1])-1, parseInt(day.dayKey.split('-')[2]));
+        const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
+        const dayOfWeek = dateObj.toLocaleString('default', { weekday: 'long' });
 
-        // Check if the therapist is working from home on this day
         if (
           day.therapists.length === 0 &&
           !blockedDays.includes(day.dayKey) &&
           !isWeekend
         ) {
-          // Get the current therapist
-          let currentTherapist = shuffledTherapists[therapistIndex];
+          let assignedThisDay = false;
+          for (let i = 0; i < shuffledTherapists.length; i++) {
+            const potentialTherapistIndex = (therapistIndex + i) % shuffledTherapists.length;
+            const potentialTherapist = shuffledTherapists[potentialTherapistIndex];
 
-          // Check if this therapist is working from home on this day
-          while (workingFromHome[currentTherapist][dayOfWeek]) {
-            therapistIndex = (therapistIndex + 1) % shuffledTherapists.length;
-            currentTherapist = shuffledTherapists[therapistIndex];
+            if (!workingFromHome[potentialTherapist] || !workingFromHome[potentialTherapist][dayOfWeek]) { // Check if WFH entry exists
+              day.therapists.push(potentialTherapist);
+              therapistIndex = (potentialTherapistIndex + 1) % shuffledTherapists.length;
+              assignedThisDay = true;
+              break;
+            }
           }
-
-          // Assign therapist to the day
-          day.therapists.push(currentTherapist);
-          therapistIndex = (therapistIndex + 1) % shuffledTherapists.length;
         }
         return day;
       });
-
       return updatedCalendar;
     });
-
     setAutoRosterTriggered(true);
   };
 
-const buttonStyle = {
-  padding: '10px 18px', // Slightly more padding
-  background: '#FFFFFF', // White background
-  color: '#4A5568',      // Muted text color
-  border: '1px solid #CBD5E0', // Light grey border
-  borderRadius: '6px',    // Softer corners
-  cursor: 'pointer',
-  fontWeight: '500',
-  transition: 'background-color 0.2s, box-shadow 0.2s',
-  boxShadow: '0 1px 2px rgba(0,0,0,0.03)', // Subtle shadow
-  // marginRight: '10px', // Remove this, use gap in flex container
-};
+  const buttonStyle = {
+    padding: '10px 18px',
+    background: '#FFFFFF',
+    color: '#4A5568',
+    border: '1px solid #CBD5E0',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontWeight: '500',
+    transition: 'background-color 0.2s, box-shadow 0.2s',
+    boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+    // Add hover effects via CSS if possible, or use onMouseEnter/Leave for JS-in-CSS
+  };
 
   const changeMonth = (direction) => {
     setCurrentMonth((prevMonth) => {
+      let newMonth = prevMonth;
       if (direction === 'next') {
-        return (prevMonth + 1) % 12; // Go to next month
+        newMonth = (prevMonth + 1) % 12;
       } else if (direction === 'prev') {
-        return (prevMonth - 1 + 12) % 12; // Go to previous month
+        newMonth = (prevMonth - 1 + 12) % 12;
       }
-      return prevMonth;
+      setTodayDate(null); // Clear "today" highlight when changing months
+      return newMonth;
     });
   };
 
+  // Style for the WFH table and Assignment Tracker cards for consistency
+  const cardStyle = {
+    backgroundColor: '#FFFFFF',
+    padding: '15px',
+    borderRadius: '8px',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+    marginBottom: '20px', // Added for spacing between sidebar cards
+  };
+  const tableCellStyle = { border: '1px solid #E2E8F0', padding: '8px', textAlign: 'center' };
+  const tableHeaderStyle = { ...tableCellStyle, backgroundColor: '#F7FAFC', fontWeight: '600', color: '#4A5568' };
+
+
   return (
     <DndProvider backend={HTML5Backend}>
-      <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: '20px', paddingBottom: '80px'}}>
-        <div>
-          <h2>Therapists</h2>
-          {therapists.map((name, index) => (
-            <Therapist key={index} name={name} />
-          ))}
-          
-          <div style={{ marginTop: '20px' }}>
+      {/* 1. Overall Page Styling */}
+      <div style={{
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"',
+        padding: '20px',
+        backgroundColor: '#F9FAFB', // Light page background
+        minHeight: '100vh',
+      }}>
+        {/* 2. Main Content Wrapper (Flex Container) */}
+        <div style={{
+          display: 'flex',
+          gap: '30px', // Space between sidebar and calendar
+          maxWidth: '1800px', // Max width for large screens
+          margin: '0 auto',   // Center content
+        }}>
 
-  <h3>Set Working from Home Days</h3>
-  <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-    <thead>
-      <tr>
-        <th style={{ border: '1px solid #ccc', padding: '8px' }}>Therapist</th>
-        {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => (
-          <th key={day} style={{ border: '1px solid #ccc', padding: '8px' }}>{day}</th>
-        ))}
-      </tr>
-    </thead>
-    <tbody>
-      {therapists.map((therapist) => (
-        <tr key={therapist}>
-          <td style={{ border: '1px solid #ccc', padding: '8px' }}>{therapist}</td>
-          {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => (
-            <td key={day} style={{ border: '1px solid #ccc', padding: '8px', textAlign: 'center' }}>
-              <input
-                type="checkbox"
-                checked={workingFromHome[therapist][day]}
-                onChange={() =>
-                  setWorkingFromHome((prev) => ({
-                    ...prev,
-                    [therapist]: {
-                      ...prev[therapist],
-                      [day]: !prev[therapist][day],
-                    },
-                  }))
-                }
-              />
-            </td>
-          ))}
-        </tr>
-      ))}
-    </tbody>
-  </table>
-</div>
+          {/* 3. Sidebar Area */}
+          <div style={{
+            flex: '0 0 400px', // Fixed width for the sidebar
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '20px' // Space between sections in the sidebar
+          }}>
+            <div style={cardStyle}> {/* Therapists List in a Card */}
+              <h2 style={{ marginTop: 0, marginBottom: '15px', color: '#1A202C', fontSize: '1.25rem' }}>Therapists</h2>
+              {therapists.map((name, index) => (
+                <Therapist key={index} name={name} />
+              ))}
+            </div>
 
-<div style={{ marginTop: '30px' }}>
-  <h3>Therapist Assignment Tracker</h3>
-  <div style={{
-    display: 'grid',
-    gridTemplateColumns: 'repeat(2, 1fr)',
-    gap: '10px',
-    marginTop: '10px'
-  }}>
-    {Object.entries(assignmentCounts).map(([therapist, count]) => (
-      <div
-        key={therapist}
-        style={{
-          padding: '10px',
-          backgroundColor: '#E3F2FD',
-          borderRadius: '12px',
-          boxShadow: '0 1px 4px rgba(0,0,0,0.1)'
-        }}
-      >
-        <strong>{therapist}</strong><br />
-        <span>Assigned Days: {count}</span>
-      </div>
-    ))}
-  </div>
-</div>
-        </div>
+            <div style={cardStyle}> {/* WFH Settings in a Card */}
+              <h3 style={{ marginTop: 0, marginBottom: '15px', color: '#2D3748', fontSize: '1.1rem' }}>Set Working from Home Days</h3>
+              <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: '0.9rem' }}>
+                <thead>
+                  <tr>
+                    <th style={tableHeaderStyle}>Therapist</th>
+                    {['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map((day) => ( // Shortened day names
+                      <th key={day} style={tableHeaderStyle}>{day}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {therapists.map((therapist) => (
+                    <tr key={therapist}>
+                      <td style={{...tableCellStyle, textAlign: 'left', fontWeight: '500' }}>{therapist}</td>
+                      {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => (
+                        <td key={day} style={tableCellStyle}>
+                          <input
+                            type="checkbox"
+                            style={{ cursor: 'pointer' }}
+                            checked={workingFromHome[therapist]?.[day] || false} // Safely access nested property
+                            onChange={() =>
+                              setWorkingFromHome((prev) => ({
+                                ...prev,
+                                [therapist]: {
+                                  ...prev[therapist],
+                                  [day]: !prev[therapist]?.[day], // Safely toggle
+                                },
+                              }))
+                            }
+                          />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-        {/* Calendar */}
-        <div id="calendar-container" style={{ width: '50%' }}>
-          <h2>Calendar for {calendar[currentMonth][0].date.toLocaleString("default", { month: "long" })}</h2>
+            <div style={cardStyle}> {/* Assignment Tracker in a Card */}
+              <h3 style={{ marginTop: 0, marginBottom: '15px', color: '#2D3748', fontSize: '1.1rem' }}>Therapist Assignment Tracker</h3>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', // Responsive columns
+                gap: '12px',
+              }}>
+                {Object.entries(assignmentCounts).map(([therapist, count]) => (
+                  <div
+                    key={therapist}
+                    style={{
+                      padding: '12px',
+                      backgroundColor: '#E6FFFA', // Light teal, matching calendar items
+                      color: '#234E52',
+                      borderRadius: '6px',
+                      // boxShadow: '0 1px 3px rgba(0,0,0,0.05)', // Optional: if you want individual shadows
+                      fontSize: '0.9rem'
+                    }}
+                  >
+                    <strong style={{ display: 'block', marginBottom: '4px' }}>{therapist}</strong>
+                    <span>Assigned: {count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
 
-          {/* Month navigation buttons */}
-          <button
-            style={buttonStyle}
-            onClick={() => changeMonth('prev')}
-          >
-            Previous
-          </button>
-          <button
-            style={buttonStyle}
-            onClick={() => changeMonth('next')}
-          >
-            Next
-          </button>
+          {/* 4. Calendar Area (Main Content) */}
+          {/* Outer div for the calendar "card" styling */}
+          <div style={{
+            flex: '1', // Takes remaining space
+            backgroundColor: '#FFFFFF',
+            padding: '25px',
+            borderRadius: '12px', // Larger radius for the main card
+            boxShadow: '0 6px 18px rgba(0,0,0,0.07)', // More prominent shadow for the main card
+          }}>
+            {/* This inner div will be targeted by html2canvas */}
+            <div id="calendar-container-content">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
+                <h2 style={{ color: '#1A202C', margin: 0, fontSize: '1.5rem' }}>
+                    {calendar[currentMonth][0].date.toLocaleString("default", { month: "long" })} 2025
+                </h2>
+                <div>
+                    <button
+                    type="button" // Good practice
+                    style={{ ...buttonStyle, marginRight: '10px' }}
+                    onClick={() => changeMonth('prev')}
+                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8';}}
+                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF';}}
+                    >
+                    ← Previous
+                    </button>
+                    <button
+                    type="button" // Good practice
+                    style={buttonStyle}
+                    onClick={() => changeMonth('next')}
+                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8';}}
+                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF';}}
+                    >
+                    Next →
+                    </button>
+                </div>
+                </div>
 
-          <Calendar 
-            monthDays={calendar[currentMonth]} 
-            moveTherapist={moveTherapist} 
-            removeTherapist={removeTherapist} 
-            todayDate={todayDate}
-          />
-          <div style={{ marginTop: '20px' }}>
-            <button 
-              style={buttonStyle} 
-              onClick={goToToday}
-            >
-              Today
-            </button>
-            <button 
-              style={buttonStyle} 
-              onClick={autoRoster}
-            >
-              Auto Roster
-            </button>
-            <button 
-              style={buttonStyle} 
-              onClick={resetCalendar}
-            >
-              Reset Calendar
-            </button>
-            <button 
-              style={buttonStyle} 
-              onClick={saveAsPNG}
-            >
-              Save as PNG
-            </button>
+                <Calendar
+                monthDays={calendar[currentMonth]}
+                moveTherapist={moveTherapist}
+                removeTherapist={removeTherapist}
+                todayDate={todayDate}
+                />
+            </div> {/* End of calendar-container-content */}
+
+            <div style={{ marginTop: '30px', display: 'flex', gap: '12px', flexWrap: 'wrap', borderTop: '1px solid #E2E8F0', paddingTop: '20px' }}>
+              <button type="button" style={buttonStyle} onClick={goToToday}  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8';}} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF';}}>Today</button>
+              <button
+                type="button"
+                style={{ ...buttonStyle, backgroundColor: '#38A169', color: 'white', border: '1px solid #38A169' }}
+                onClick={autoRoster}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#2F855A';}}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#38A169';}}
+              >
+                Auto Roster
+              </button>
+              <button type="button" style={buttonStyle} onClick={resetCalendar} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8';}} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF';}}>Reset Calendar</button>
+              <button type="button" style={buttonStyle} onClick={saveAsPNG} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8';}} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF';}}>Save as PNG</button>
+            </div>
           </div>
         </div>
       </div>
