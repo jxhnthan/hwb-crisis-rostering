@@ -6,21 +6,21 @@ import html2canvas from 'html2canvas';
 
 // Define therapist names
 const therapists = [
-  "Dominic Yeo", "Kirsty Png", "Soon Jiaying", 
+  "Dominic Yeo", "Kirsty Png", "Soon Jiaying",
   "Andrew Lim", "Janice Leong", "Oliver Tan",
   "Claudia Ahl", "Seanna Neo", "Xiao Hui", "Tika Zainal"
 ];
 
 // Blocked days (in YYYY-MM-DD format)
 const blockedDays = [
-  "2025-1-1", "2025-1-29", "2025-1-30", 
-  "2025-3-31", "2025-4-18", "2025-5-1", 
-  "2025-5-12", "2025-6-7", "2025-8-9", 
-  "2025-3-28", "2025-10-25", "2025-10-20", 
+  "2025-1-1", "2025-1-29", "2025-1-30",
+  "2025-3-31", "2025-4-18", "2025-5-1",
+  "2025-5-12", "2025-6-7", "2025-8-9",
+  "2025-3-28", "2025-10-25", "2025-10-20",
   "2025-10-21", "2025-12-25"
 ];
 
-//" Helper function to get the dates for each month in 2025 with unique keys
+// Helper function to get the dates for each month in 2025 with unique keys
 const get2025Calendar = () => {
   const months = [
     [31, 'January'], [28, 'February'], [31, 'March'], [30, 'April'],
@@ -64,9 +64,9 @@ const Therapist = ({ name }) => {
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: '10px',
-        padding: '10px 14px',
-        margin: '6px 0',
+        gap: '10px', // Reverted to original gap
+        padding: '10px 14px', // Reverted to original padding
+        margin: '6px 0', // Reverted to original margin
         backgroundColor: '#E0F7FA',
         borderRadius: '999px',
         fontWeight: '500',
@@ -83,17 +83,17 @@ const Therapist = ({ name }) => {
           backgroundColor: '#00796B',
           color: 'white',
           borderRadius: '50%',
-          width: '28px',
-          height: '28px',
+          width: '28px', // Reverted to original size for the circle
+          height: '28px', // Reverted to original size for the circle
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: '0.8rem',
+          fontSize: '0.8rem', // Reverted to original font size for initials
         }}
       >
         {initials}
       </div>
-      <span>{name}</span>
+      <span>{name}</span> {/* Reverted to original font size for name */}
     </div>
   );
 };
@@ -118,20 +118,17 @@ const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked }
   }));
 
   const dayNumber = day.date.getDate();
-  const isCurrentMonth = new Date().getMonth() === day.date.getMonth() && new Date().getFullYear() === day.date.getFullYear(); // Optional: for styling non-current month days if you ever show them
 
   let backgroundColor = '#FFFFFF'; // Default background
-  let textColor = '#333333';    // Default text color
   let dayNumberColor = '#4A5568'; // Slightly muted day number
 
   if (finalBlockedStatus) {
     backgroundColor = '#F7FAFC'; // Very light grey for blocked/weekend
-    textColor = '#A0AEC0';       // Muted text for blocked
     dayNumberColor = '#A0AEC0';
   }
   if (isToday) {
     backgroundColor = '#E6FFFA'; // Light teal for today
-    dayNumberColor = '#2C7A7B';   // Stronger teal for today's number
+    dayNumberColor = '#2C7A7B';    // Stronger teal for today's number
   }
 
   // Style for when a therapist is being dragged over a droppable day
@@ -143,27 +140,27 @@ const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked }
     <div
       ref={drop}
       style={{
-        padding: '8px',
-        minHeight: '120px', // Increased min-height for more space
+        padding: '12px', // Increased padding for more inner space
+        minHeight: '160px', // **Significantly increased min-height for more space for larger cards**
         position: 'relative',
         backgroundColor: backgroundColor,
-        borderRadius: '6px', // Softer corners
-        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03)', // Softer shadow
+        borderRadius: '6px',
+        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03)',
         display: 'flex',
         flexDirection: 'column',
-        gap: '6px', // Space between items inside the day cell
-        border: `1px solid ${isToday ? '#4FD1C5' : '#E2E8F0'}`, // Subtle border, emphasized for today
+        gap: '10px', // **More space between items inside the day cell**
+        border: `1px solid ${isToday ? '#4FD1C5' : '#E2E8F0'}`,
         transition: 'background-color 0.2s ease-in-out',
       }}
     >
       <strong
         style={{
-          alignSelf: 'flex-end', // Position day number to top-right
-          fontSize: '0.85rem',
+          alignSelf: 'flex-end',
+          fontSize: '0.9rem',
           color: dayNumberColor,
-          backgroundColor: isToday ? '#B2F5EA' : 'transparent', // Optional: small bg circle for today's number
+          backgroundColor: isToday ? '#B2F5EA' : 'transparent',
           borderRadius: isToday ? '50%' : '0',
-          padding: isToday ? '2px 6px' : '0',
+          padding: isToday ? '3px 8px' : '0',
           lineHeight: '1',
         }}
       >
@@ -171,62 +168,88 @@ const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked }
       </strong>
 
       {day.therapists.length > 0 ? (
-        day.therapists.map((therapist, idx) => (
-          <div
-            key={idx}
-            style={{
-              fontSize: '0.8rem',
-              padding: '4px 8px',
-              backgroundColor: '#E6FFFA', // Consistent light teal for assigned
-              color: '#234E52',        // Darker teal text
-              borderRadius: '4px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
-            <span>{therapist}</span>
-            <button
-              onClick={() => removeTherapist(therapist, day.dayKey)}
+        day.therapists.map((therapist, idx) => {
+          const initials = therapist
+            .split(' ')
+            .map((word) => word[0])
+            .join('')
+            .toUpperCase();
+          return (
+            <div
+              key={idx}
               style={{
-                marginLeft: '8px',
-                color: '#E53E3E', // Red for remove
-                cursor: 'pointer',
-                background: 'transparent',
-                border: 'none',
-                fontWeight: 'bold',
-                padding: '2px',
-                lineHeight: '1',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px', // **Increased gap inside the therapist card**
+                padding: '8px 12px', // **More padding for assigned card**
+                backgroundColor: '#E6FFFA',
+                color: '#234E52',
+                borderRadius: '8px', // **Slightly larger border-radius for emphasis**
+                justifyContent: 'space-between',
+                fontWeight: '600', // **Bolder text for better readability**
+                boxShadow: '0 1px 4px rgba(0,0,0,0.08)', // **Subtle shadow for card lift**
               }}
-              title={`Remove ${therapist}`} // Accessibility
             >
-              × {/* Use an 'x' icon (times symbol) */}
-            </button>
-          </div>
-        ))
+              <div
+                style={{
+                  backgroundColor: '#00796B',
+                  color: 'white',
+                  borderRadius: '50%',
+                  width: '40px', // **Significantly larger circle for initials**
+                  height: '40px', // **Significantly larger circle for initials**
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1.1rem', // **Larger font for initials**
+                  flexShrink: 0,
+                }}
+              >
+                {initials}
+              </div>
+              <span style={{ fontSize: '1.05rem', flexGrow: 1 }}>{therapist}</span> {/* **Larger font for name** */}
+              <button
+                onClick={() => removeTherapist(therapist, day.dayKey)}
+                style={{
+                  marginLeft: '10px',
+                  color: '#E53E3E',
+                  cursor: 'pointer',
+                  background: 'transparent',
+                  border: 'none',
+                  fontWeight: 'bold',
+                  padding: '2px',
+                  lineHeight: '1',
+                  fontSize: '1.2rem', // **Larger 'x' for removal**
+                }}
+                title={`Remove ${therapist}`}
+              >
+                ×
+              </button>
+            </div>
+          );
+        })
       ) : (
-        !finalBlockedStatus && ( // Only show placeholder if not blocked
+        !finalBlockedStatus && (
           <div style={{
-            fontSize: '0.75rem',
+            fontSize: '0.85rem', // Slightly larger placeholder text
             color: '#A0AEC0',
             textAlign: 'center',
-            marginTop: 'auto', // Push to bottom if cell expands
+            marginTop: 'auto',
             marginBottom: 'auto'
           }}>
             Empty
           </div>
         )
       )}
-      {finalBlockedStatus && !isToday && ( // Label for blocked/weekend if not today
-         <div style={{
-            fontSize: '0.7rem',
-            color: '#718096',
-            textAlign: 'center',
-            marginTop: 'auto',
-            marginBottom: 'auto'
-          }}>
-            {isWeekend && !blockedDays.includes(day.dayKey) ? 'Weekend' : 'Blocked'}
-         </div>
+      {finalBlockedStatus && !isToday && (
+        <div style={{
+          fontSize: '0.8rem', // Slightly larger blocked/weekend label
+          color: '#718096',
+          textAlign: 'center',
+          marginTop: 'auto',
+          marginBottom: 'auto'
+        }}>
+          {isWeekend && !blockedDays.includes(day.dayKey) ? 'Weekend' : 'Blocked'}
+        </div>
       )}
     </div>
   );
@@ -245,9 +268,9 @@ const Calendar = ({ monthDays, moveTherapist, removeTherapist, todayDate }) => {
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(7, 1fr)',
-        gap: '8px', // Slightly reduced gap to match cell padding
+        gap: '8px',
         marginTop: '20px',
-        marginBottom: '8px', // Space before actual calendar days
+        marginBottom: '8px',
         fontWeight: '600',
         color: '#4A5568',
         textAlign: 'center',
@@ -258,14 +281,14 @@ const Calendar = ({ monthDays, moveTherapist, removeTherapist, todayDate }) => {
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(7, 1fr)',
-        gap: '8px', // Consistent gap
+        gap: '8px',
       }}>
         {/* Add empty divs for padding if the month doesn't start on Sunday */}
         {Array.from({ length: firstDayOfMonth }).map((_, index) => (
           <div key={`empty-${index}`} style={{
-            backgroundColor: '#F7FAFC', // Match blocked background or even lighter
+            backgroundColor: '#F7FAFC',
             borderRadius: '6px',
-            minHeight: '120px', // Match CalendarDay minHeight
+            minHeight: '160px', // **Match CalendarDay minHeight**
           }} />
         ))}
         {monthDays.map((day) => {
@@ -324,12 +347,12 @@ const App = () => {
         if (index === currentMonth) {
           return month.map((day) => {
             if (day.dayKey === dayKey && !blockedDays.includes(dayKey) && !day.therapists.includes(name)) {
-                // Check if the day is a weekend
-                const dateObj = new Date(day.dayKey.split('-')[0], day.dayKey.split('-')[1]-1, day.dayKey.split('-')[2]);
-                const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
-                if (!isWeekend) { // Only add if not a weekend
-                    return { ...day, therapists: [...day.therapists, name] };
-                }
+              // Check if the day is a weekend
+              const dateObj = new Date(day.dayKey.split('-')[0], day.dayKey.split('-')[1] - 1, day.dayKey.split('-')[2]);
+              const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
+              if (!isWeekend) { // Only add if not a weekend
+                return { ...day, therapists: [...day.therapists, name] };
+              }
             }
             return day;
           });
@@ -339,7 +362,7 @@ const App = () => {
       return updatedCalendar;
     });
   };
-  
+
 
   const removeTherapist = (name, dayKey) => {
     setCalendar((prevCalendar) => {
@@ -366,8 +389,8 @@ const App = () => {
   const saveAsPNG = () => {
     const calendarContainer = document.getElementById("calendar-container-content"); // Target the inner content for better PNG
     if (!calendarContainer) {
-        console.error("Calendar container content not found for PNG export.");
-        return;
+      console.error("Calendar container content not found for PNG export.");
+      return;
     }
     html2canvas(calendarContainer, {
       backgroundColor: "#FFFFFF", // Calendar content itself is white
@@ -385,109 +408,109 @@ const App = () => {
     });
   };
 
-const autoRoster = () => {
-  setCalendar((prevCalendar) => {
-    const updatedCalendar = [...prevCalendar];
-    const currentMonthData = [...updatedCalendar[currentMonth]];
+  const autoRoster = () => {
+    setCalendar((prevCalendar) => {
+      const updatedCalendar = [...prevCalendar];
+      const currentMonthData = [...updatedCalendar[currentMonth]];
 
-    const monthlyAssignmentCounts = therapists.reduce((acc, t) => ({ ...acc, [t]: 0 }), {});
+      const monthlyAssignmentCounts = therapists.reduce((acc, t) => ({ ...acc, [t]: 0 }), {});
 
-    // Estimate total assignable slots for the month to get a rough average
-    // This is an approximation because WFH impacts actual availability dynamically
-    let totalPossibleSlots = 0;
-    currentMonthData.forEach(day => {
-      const isWeekend = day.date.getDay() === 0 || day.date.getDay() === 6;
-      if (!blockedDays.includes(day.dayKey) && !isWeekend) {
-        totalPossibleSlots++;
-      }
-    });
-    const targetAverageShifts = Math.max(1, totalPossibleSlots / therapists.length); // Avoid division by zero, ensure at least 1
-    // Define a threshold for being "significantly behind"
-    // This is a heuristic. Could be 1, 2, or a percentage of targetAverageShifts.
-    const LAGGING_THRESHOLD = 2; // e.g., if someone is 2 shifts below the current average of those assigned
+      // Estimate total assignable slots for the month to get a rough average
+      // This is an approximation because WFH impacts actual availability dynamically
+      let totalPossibleSlots = 0;
+      currentMonthData.forEach(day => {
+        const isWeekend = day.date.getDay() === 0 || day.date.getDay() === 6;
+        if (!blockedDays.includes(day.dayKey) && !isWeekend) {
+          totalPossibleSlots++;
+        }
+      });
+      const targetAverageShifts = Math.max(1, totalPossibleSlots / therapists.length); // Avoid division by zero, ensure at least 1
+      // Define a threshold for being "significantly behind"
+      // This is a heuristic. Could be 1, 2, or a percentage of targetAverageShifts.
+      const LAGGING_THRESHOLD = 2; // e.g., if someone is 2 shifts below the current average of those assigned
 
-    // Order for consideration, can be shuffled once at start for more tie-breaking randomness
-    let therapistConsiderationOrder = [...therapists].sort(() => Math.random() - 0.5);
+      // Order for consideration, can be shuffled once at start for more tie-breaking randomness
+      let therapistConsiderationOrder = [...therapists].sort(() => Math.random() - 0.5);
 
 
-    const newMonthDays = currentMonthData.map((day) => {
-      const newDay = { ...day, therapists: [...day.therapists] }; // Work with a new day object
-      const isWeekend = newDay.date.getDay() === 0 || newDay.date.getDay() === 6;
-      const dayOfWeek = newDay.date.toLocaleString('default', { weekday: 'long' });
+      const newMonthDays = currentMonthData.map((day) => {
+        const newDay = { ...day, therapists: [...day.therapists] }; // Work with a new day object
+        const isWeekend = newDay.date.getDay() === 0 || newDay.date.getDay() === 6;
+        const dayOfWeek = newDay.date.toLocaleString('default', { weekday: 'long' });
 
-      if (
-        newDay.therapists.length === 0 && // Only if unassigned
-        !blockedDays.includes(newDay.dayKey) &&
-        !isWeekend
-      ) {
-        let assignedThisDay = false;
+        if (
+          newDay.therapists.length === 0 && // Only if unassigned
+          !blockedDays.includes(newDay.dayKey) &&
+          !isWeekend
+        ) {
+          let assignedThisDay = false;
 
-        // 1. Get all therapists NOT WFH on this day
-        const availableToday = therapistConsiderationOrder.filter(
-          (t) => !workingFromHome[t]?.[dayOfWeek]
-        );
-
-        if (availableToday.length > 0) {
-          // Sort them by current assignment count
-          availableToday.sort((a, b) => monthlyAssignmentCounts[a] - monthlyAssignmentCounts[b]);
-
-          // Calculate current average of *assigned* shifts (can change as roster fills)
-          const currentAssignedValues = Object.values(monthlyAssignmentCounts).filter(c => c > 0);
-          const currentAverage = currentAssignedValues.length > 0
-            ? currentAssignedValues.reduce((sum, val) => sum + val, 0) / currentAssignedValues.length
-            : 0;
-
-          // 2. Try to pick a "lagging" therapist first from those available today
-          let therapistToAssign = null;
-
-          // Find lagging therapists among those available today
-          const laggingAndAvailable = availableToday.filter(
-            (t) => monthlyAssignmentCounts[t] < Math.max(1, currentAverage - LAGGING_THRESHOLD / 2) || // Significantly below current dynamic average
-                   monthlyAssignmentCounts[t] < Math.max(1, targetAverageShifts - LAGGING_THRESHOLD) // Significantly below overall month target
+          // 1. Get all therapists NOT WFH on this day
+          const availableToday = therapistConsiderationOrder.filter(
+            (t) => !workingFromHome[t]?.[dayOfWeek]
           );
-          
-          // Sort lagging and available by their current count (already partially done by availableToday sort)
-          // No, re-sort them explicitly to ensure the absolute lowest gets it
-          laggingAndAvailable.sort((a,b) => monthlyAssignmentCounts[a] - monthlyAssignmentCounts[b]);
+
+          if (availableToday.length > 0) {
+            // Sort them by current assignment count
+            availableToday.sort((a, b) => monthlyAssignmentCounts[a] - monthlyAssignmentCounts[b]);
+
+            // Calculate current average of *assigned* shifts (can change as roster fills)
+            const currentAssignedValues = Object.values(monthlyAssignmentCounts).filter(c => c > 0);
+            const currentAverage = currentAssignedValues.length > 0
+              ? currentAssignedValues.reduce((sum, val) => sum + val, 0) / currentAssignedValues.length
+              : 0;
+
+            // 2. Try to pick a "lagging" therapist first from those available today
+            let therapistToAssign = null;
+
+            // Find lagging therapists among those available today
+            const laggingAndAvailable = availableToday.filter(
+              (t) => monthlyAssignmentCounts[t] < Math.max(1, currentAverage - LAGGING_THRESHOLD / 2) || // Significantly below current dynamic average
+                monthlyAssignmentCounts[t] < Math.max(1, targetAverageShifts - LAGGING_THRESHOLD) // Significantly below overall month target
+            );
+
+            // Sort lagging and available by their current count (already partially done by availableToday sort)
+            // No, re-sort them explicitly to ensure the absolute lowest gets it
+            laggingAndAvailable.sort((a, b) => monthlyAssignmentCounts[a] - monthlyAssignmentCounts[b]);
 
 
-          if (laggingAndAvailable.length > 0) {
-            therapistToAssign = laggingAndAvailable[0];
-            // console.log(`Day ${newDay.dayKey}: Assigning LAGGING ${therapistToAssign} (Count: ${monthlyAssignmentCounts[therapistToAssign]})`);
-          } else {
-            // 3. If no "lagging" therapist is available, pick the one with the fewest shifts
-            // from the general pool of those available today.
-            // `availableToday` is already sorted by count.
-            if(availableToday.length > 0) {
+            if (laggingAndAvailable.length > 0) {
+              therapistToAssign = laggingAndAvailable[0];
+              // console.log(`Day ${newDay.dayKey}: Assigning LAGGING ${therapistToAssign} (Count: ${monthlyAssignmentCounts[therapistToAssign]})`);
+            } else {
+              // 3. If no "lagging" therapist is available, pick the one with the fewest shifts
+              // from the general pool of those available today.
+              // `availableToday` is already sorted by count.
+              if (availableToday.length > 0) {
                 therapistToAssign = availableToday[0];
                 // console.log(`Day ${newDay.dayKey}: Assigning REGULAR ${therapistToAssign} (Count: ${monthlyAssignmentCounts[therapistToAssign]}) from available pool`);
+              }
+            }
+
+            if (therapistToAssign) {
+              newDay.therapists = [therapistToAssign];
+              monthlyAssignmentCounts[therapistToAssign]++;
+              assignedThisDay = true;
+
+              // Rotate the main consideration order to help with tie-breaking over time
+              therapistConsiderationOrder = [
+                ...therapistConsiderationOrder.filter(t => t !== therapistToAssign),
+                therapistToAssign
+              ];
             }
           }
-
-          if (therapistToAssign) {
-            newDay.therapists = [therapistToAssign];
-            monthlyAssignmentCounts[therapistToAssign]++;
-            assignedThisDay = true;
-
-            // Rotate the main consideration order to help with tie-breaking over time
-            therapistConsiderationOrder = [
-              ...therapistConsiderationOrder.filter(t => t !== therapistToAssign),
-              therapistToAssign
-            ];
-          }
+          // if (!assignedThisDay) {
+          //    console.warn(`Could not assign anyone to ${newDay.dayKey}`);
+          // }
         }
-        // if (!assignedThisDay) {
-        //   console.warn(`Could not assign anyone to ${newDay.dayKey}`);
-        // }
-      }
-      return newDay;
-    });
+        return newDay;
+      });
 
-    updatedCalendar[currentMonth] = newMonthDays;
-    return updatedCalendar;
-  });
-  setAutoRosterTriggered(true);
-};
+      updatedCalendar[currentMonth] = newMonthDays;
+      return updatedCalendar;
+    });
+    setAutoRosterTriggered(true);
+  };
 
   const buttonStyle = {
     padding: '10px 18px',
@@ -541,7 +564,7 @@ const autoRoster = () => {
           display: 'flex',
           gap: '30px', // Space between sidebar and calendar
           maxWidth: '1800px', // Max width for large screens
-          margin: '0 auto',   // Center content
+          margin: '0 auto',    // Center content
         }}>
 
           {/* 3. Sidebar Area */}
@@ -572,7 +595,7 @@ const autoRoster = () => {
                 <tbody>
                   {therapists.map((therapist) => (
                     <tr key={therapist}>
-                      <td style={{...tableCellStyle, textAlign: 'left', fontWeight: '500' }}>{therapist}</td>
+                      <td style={{ ...tableCellStyle, textAlign: 'left', fontWeight: '500' }}>{therapist}</td>
                       {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => (
                         <td key={day} style={tableCellStyle}>
                           <input
@@ -635,53 +658,53 @@ const autoRoster = () => {
           }}>
             {/* This inner div will be targeted by html2canvas */}
             <div id="calendar-container-content">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
                 <h2 style={{ color: '#1A202C', margin: 0, fontSize: '1.5rem' }}>
-                    {calendar[currentMonth][0].date.toLocaleString("default", { month: "long" })} 2025
+                  {calendar[currentMonth][0].date.toLocaleString("default", { month: "long" })} 2025
                 </h2>
                 <div>
-                    <button
+                  <button
                     type="button" // Good practice
                     style={{ ...buttonStyle, marginRight: '10px' }}
                     onClick={() => changeMonth('prev')}
-                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8';}}
-                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF';}}
-                    >
+                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}
+                  >
                     ← Previous
-                    </button>
-                    <button
+                  </button>
+                  <button
                     type="button" // Good practice
                     style={buttonStyle}
                     onClick={() => changeMonth('next')}
-                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8';}}
-                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF';}}
-                    >
+                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}
+                  >
                     Next →
-                    </button>
+                  </button>
                 </div>
-                </div>
+              </div>
 
-                <Calendar
+              <Calendar
                 monthDays={calendar[currentMonth]}
                 moveTherapist={moveTherapist}
                 removeTherapist={removeTherapist}
                 todayDate={todayDate}
-                />
+              />
             </div> {/* End of calendar-container-content */}
 
             <div style={{ marginTop: '30px', display: 'flex', gap: '12px', flexWrap: 'wrap', borderTop: '1px solid #E2E8F0', paddingTop: '20px' }}>
-              <button type="button" style={buttonStyle} onClick={goToToday}  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8';}} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF';}}>Today</button>
+              <button type="button" style={buttonStyle} onClick={goToToday} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}>Today</button>
               <button
                 type="button"
                 style={{ ...buttonStyle, backgroundColor: '#38A169', color: 'white', border: '1px solid #38A169' }}
                 onClick={autoRoster}
-                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#2F855A';}}
-                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#38A169';}}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#2F855A'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#38A169'; }}
               >
                 Auto Roster
               </button>
-              <button type="button" style={buttonStyle} onClick={resetCalendar} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8';}} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF';}}>Reset Calendar</button>
-              <button type="button" style={buttonStyle} onClick={saveAsPNG} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8';}} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF';}}>Save as PNG</button>
+              <button type="button" style={buttonStyle} onClick={resetCalendar} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}>Reset Calendar</button>
+              <button type="button" style={buttonStyle} onClick={saveAsPNG} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}>Save as PNG</button>
             </div>
           </div>
         </div>
