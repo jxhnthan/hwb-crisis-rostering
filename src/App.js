@@ -318,7 +318,7 @@ const App = () => {
   const [workingFromHome, setWorkingFromHome] = useState(
     // Update this section
     {
-      "Dominic Yeo": { Monday: false, Tuesday: true, Wednesday: true, Thursday: false, Friday: true },
+      "Dominic Yeo": { Monday: false, Tuesday: true, Wednesday: true, Thursday: true, Friday: false },
       "Kirsty Png": { Monday: false, Tuesday: false, Wednesday: true, Thursday: false, Friday: false },
       "Soon Jiaying": { Monday: false, Tuesday: false, Wednesday: false, Thursday: false, Friday: true },
       "Andrew Lim": { Monday: false, Tuesday: false, Wednesday: false, Thursday: false, Friday: true },
@@ -327,7 +327,7 @@ const App = () => {
       "Claudia Ahl": { Monday: false, Tuesday: false, Wednesday: false, Thursday: true, Friday: false },
       "Seanna Neo": { Monday: false, Tuesday: true, Wednesday: false, Thursday: false, Friday: false },
       "Xiao Hui": { Monday: false, Tuesday: false, Wednesday: false, Thursday: true, Friday: false },
-      "Tika Zainal": { Monday: false, Tuesday: true, Wednesday: true, Thursday: false, Friday: true },
+      "Tika Zainal": { Monday: false, Tuesday: true, Wednesday: true, Thursday: true, Friday: false },
     }
   );
 
