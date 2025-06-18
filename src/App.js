@@ -316,12 +316,19 @@ const App = () => {
   const [todayDate, setTodayDate] = useState(null);
   const [autoRosterTriggered, setAutoRosterTriggered] = useState(false);
   const [workingFromHome, setWorkingFromHome] = useState(
-    therapists.reduce((acc, therapist) => {
-      acc[therapist] = {
-        Monday: false, Tuesday: false, Wednesday: false, Thursday: false, Friday: false,
-      };
-      return acc;
-    }, {})
+    // Update this section
+    {
+      "Dominic Yeo": { Monday: false, Tuesday: true, Wednesday: true, Thursday: false, Friday: true },
+      "Kirsty Png": { Monday: false, Tuesday: false, Wednesday: true, Thursday: false, Friday: false },
+      "Soon Jiaying": { Monday: false, Tuesday: false, Wednesday: false, Thursday: false, Friday: true },
+      "Andrew Lim": { Monday: false, Tuesday: false, Wednesday: false, Thursday: false, Friday: true },
+      "Janice Leong": { Monday: false, Tuesday: false, Wednesday: true, Thursday: false, Friday: false },
+      "Oliver Tan": { Monday: false, Tuesday: true, Wednesday: false, Thursday: false, Friday: false },
+      "Claudia Ahl": { Monday: false, Tuesday: false, Wednesday: false, Thursday: true, Friday: false },
+      "Seanna Neo": { Monday: false, Tuesday: true, Wednesday: false, Thursday: false, Friday: false },
+      "Xiao Hui": { Monday: false, Tuesday: false, Wednesday: false, Thursday: true, Friday: false },
+      "Tika Zainal": { Monday: false, Tuesday: true, Wednesday: true, Thursday: false, Friday: true },
+    }
   );
 
   const assignmentCounts = therapists.reduce((acc, therapist) => {
