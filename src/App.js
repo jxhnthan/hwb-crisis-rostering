@@ -11,16 +11,13 @@ const therapists = [
   "Claudia Ahl", "Seanna Neo", "Xiao Hui", "Tika Zainal"
 ];
 
----
-
-### Blocked Days for Each Year
-
+// Blocked Days for Each Year
 // Blocked days for 2025 (in YYYY-MM-DD format)
 const blockedDays2025 = [
-  "2025-1-1", "2025-1-29", "2025-1-30",
-  "2025-3-31", "2025-4-18", "2025-5-1",
-  "2025-5-12", "2025-6-7", "2025-8-9",
-  "2025-3-28", "2025-10-25", "2025-10-20",
+  "2025-01-01", "2025-01-29", "2025-01-30",
+  "2025-03-31", "2025-04-18", "2025-05-01",
+  "2025-05-12", "2025-06-07", "2025-08-09",
+  "2025-03-28", "2025-10-25", "2025-10-20",
   "2025-10-21", "2025-12-25"
 ];
 
@@ -42,10 +39,8 @@ const blockedDays2026 = [
   "2026-12-25"    // Christmas Day (Friday)
 ];
 
----
 
-### Helper Functions for Calendar Generation
-
+// Helper Functions for Calendar Generation
 // Helper function to get the number of days in a month for a given year
 const getDaysInMonth = (year, monthIndex) => {
   // monthIndex is 0-indexed, so new Date(year, monthIndex + 1, 0) gets the last day of the month
@@ -74,10 +69,8 @@ const getCalendarForYear = (year) => {
   return calendar;
 };
 
----
 
-### Therapist Component
-
+// Therapist Component
 // This component remains largely the same as it's concerned with dragging individual therapists
 const Therapist = ({ name }) => {
   const [, drag] = useDrag(() => ({
@@ -131,10 +124,8 @@ const Therapist = ({ name }) => {
   );
 };
 
----
 
-### Calendar Day (Drop Zone) Component
-
+// Calendar Day (Drop Zone) Component
 // This component now receives 'isBlocked' as a prop, which is determined dynamically in the parent
 const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked }) => {
   const isWeekend = day.date.getDay() === 0 || day.date.getDay() === 6;
@@ -297,10 +288,8 @@ const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked }
   );
 };
 
----
 
-### Calendar Grid Component
-
+// Calendar Grid Component
 // This component now explicitly receives `blockedDaysForYear` as a prop
 const Calendar = ({ monthDays, moveTherapist, removeTherapist, todayDate, blockedDaysForYear }) => {
   const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -357,10 +346,8 @@ const Calendar = ({ monthDays, moveTherapist, removeTherapist, todayDate, blocke
   );
 };
 
----
 
-### Main App Component
-
+// Main App Component
 const App = () => {
   // State for the currently displayed year, initialized to the current actual year
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
@@ -398,9 +385,10 @@ const App = () => {
 
   // Calculate assignment counts for the *currently displayed month and year*
   const assignmentCounts = therapists.reduce((acc, therapist) => {
+    // Safely access nested properties with optional chaining and provide a default of 0
     acc[therapist] = calendarData[currentYear]?.[currentMonth]?.filter((day) =>
       day.therapists.includes(therapist)
-    ).length || 0; // Add nullish coalescing to safely access nested properties
+    ).length || 0;
     return acc;
   }, {});
 
@@ -511,7 +499,7 @@ const App = () => {
       const imgData = canvas.toDataURL("image/png");
       const link = document.createElement("a");
       // Get the month name from the currently displayed calendar data
-      const currentMonthName = calendarData[currentYear][currentMonth][0].date.toLocaleString("default", { month: "long" });
+      const currentMonthName = calendarData[currentYear]?.[currentMonth]?.[0]?.date.toLocaleString("default", { month: "long" });
       // Include the dynamic year in the downloaded filename
       link.href = imgData;
       link.download = `Therapist_Roster_${currentMonthName}_${currentYear}.png`;
@@ -573,8 +561,8 @@ const App = () => {
 
             // 2. Try to pick a "lagging" therapist first from those available today
             const laggingAndAvailable = availableToday.filter(
-              (t) => monthlyAssignmentCounts[t] < Math.max(1, currentAverage - LAGGING_THRESHOLD / 2) || // Significantly below current dynamic average
-                monthlyAssignmentCounts[t] < Math.max(1, targetAverageShifts - LAGGING_THRESHOLD) // Significantly below overall month target
+              (t) => monthlyAssignmentCounts[t] < Math.max(1, currentAverage - LAGGING_THRESHOLD / 2) ||
+                monthlyAssignmentCounts[t] < Math.max(1, targetAverageShifts - LAGGING_THRESHOLD)
             );
 
             // Sort lagging and available by their current count (lowest count first)
@@ -830,6 +818,11 @@ const App = () => {
           </div>
         </div>
       </div>
+    </DndProvider>
+  );
+};
+
+export default App;
 
 
 
