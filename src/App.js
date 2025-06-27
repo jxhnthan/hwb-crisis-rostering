@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
@@ -11,8 +11,9 @@ const therapists = [
   "Claudia Ahl", "Seanna Neo", "Xiao Hui", "Tika Zainal"
 ];
 
-// Blocked days (in YYYY-MM-DD format)
-const blockedDays = [
+// --- Blocked Days for Each Year ---
+// Blocked days for 2025 (in YYYY-MM-DD format)
+const blockedDays2025 = [
   "2025-1-1", "2025-1-29", "2025-1-30",
   "2025-3-31", "2025-4-18", "2025-5-1",
   "2025-5-12", "2025-6-7", "2025-8-9",
@@ -20,32 +21,55 @@ const blockedDays = [
   "2025-10-21", "2025-12-25"
 ];
 
-// Helper function to get the dates for each month in 2025 with unique keys
-const get2025Calendar = () => {
-  const months = [
-    [31, 'January'], [28, 'February'], [31, 'March'], [30, 'April'],
-    [31, 'May'], [30, 'June'], [31, 'July'], [31, 'August'],
-    [30, 'September'], [31, 'October'], [30, 'November'], [31, 'December']
-  ];
+// Blocked days for 2026 (public holidays, with observed days for Sundays)
+const blockedDays2026 = [
+  "2026-1-1",   // New Year’s Day
+  "2026-2-17",  // Chinese New Year
+  "2026-2-18",  // Chinese New Year
+  "2026-3-21",  // Hari Raya Puasa
+  "2026-4-3",   // Good Friday
+  "2026-5-1",   // Labour Day
+  "2026-5-27",  // Hari Raya Haji
+  "2026-5-31",  // Vesak Day
+  "2026-6-1",   // Vesak Day (Observed - since May 31 is a Sunday)
+  "2026-8-9",   // National Day
+  "2026-8-10",  // National Day (Observed - since Aug 9 is a Sunday)
+  "2026-11-8",  // Deepavali
+  "2026-11-9",  // Deepavali (Observed - since Nov 8 is a Sunday)
+  "2026-12-25"  // Christmas Day
+];
 
-  const calendar = months.map(([days, month], monthIndex) => {
-    const monthDays = Array.from({ length: days }, (_, dayIndex) => {
-      const date = new Date(2025, monthIndex, dayIndex + 1);
-      const dayKey = `${2025}-${monthIndex + 1}-${dayIndex + 1}`; // Unique day identifier (YYYY-MM-DD)
+// --- Helper Functions for Calendar Generation ---
+// Helper function to get the number of days in a month for a given year
+const getDaysInMonth = (year, monthIndex) => {
+  // monthIndex is 0-indexed, so new Date(year, monthIndex + 1, 0) gets the last day of the month
+  return new Date(year, monthIndex + 1, 0).getDate();
+};
+
+// Helper function to get the dates for a given year with unique keys
+const getCalendarForYear = (year) => {
+  const calendar = [];
+  for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
+    const daysInMonth = getDaysInMonth(year, monthIndex);
+    const monthDays = Array.from({ length: daysInMonth }, (_, dayIndex) => {
+      const date = new Date(year, monthIndex, dayIndex + 1);
+      // Ensure month and day are two digits for dayKey consistency
+      const formattedMonth = String(monthIndex + 1).padStart(2, '0');
+      const formattedDay = String(dayIndex + 1).padStart(2, '0');
+      const dayKey = `${year}-${formattedMonth}-${formattedDay}`; // Unique day identifier (YYYY-MM-DD)
       return {
         date,
         dayKey,
         therapists: []
       };
     });
-    return monthDays;
-  });
-
+    calendar.push(monthDays);
+  }
   return calendar;
 };
 
-const calendarData = get2025Calendar(); // Initialize full 2025 calendar
 
+// --- Therapist Component (No changes needed) ---
 const Therapist = ({ name }) => {
   const [, drag] = useDrag(() => ({
     type: 'THERAPIST',
@@ -64,9 +88,9 @@ const Therapist = ({ name }) => {
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: '10px', // Reverted to original gap
-        padding: '10px 14px', // Reverted to original padding
-        margin: '6px 0', // Reverted to original margin
+        gap: '10px',
+        padding: '10px 14px',
+        margin: '6px 0',
         backgroundColor: '#E0F7FA',
         borderRadius: '999px',
         fontWeight: '500',
@@ -83,27 +107,28 @@ const Therapist = ({ name }) => {
           backgroundColor: '#00796B',
           color: 'white',
           borderRadius: '50%',
-          width: '28px', // Reverted to original size for the circle
-          height: '28px', // Reverted to original size for the circle
+          width: '28px',
+          height: '28px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: '0.8rem', // Reverted to original font size for initials
+          fontSize: '0.8rem',
         }}
       >
         {initials}
       </div>
-      <span>{name}</span> {/* Reverted to original font size for name */}
+      <span>{name}</span>
     </div>
   );
 };
 
-// Calendar Day (Drop Zone)
+// --- Calendar Day (Drop Zone) Component ---
+// This component now receives 'blockedDaysForYear' dynamically
 const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked }) => {
   const isWeekend = day.date.getDay() === 0 || day.date.getDay() === 6;
-  const finalBlockedStatus = isBlocked || isWeekend;
+  const finalBlockedStatus = isBlocked || isWeekend; // Combines explicitly blocked days and weekends
 
-  const [{ isOver, canDrop }, drop] = useDrop(() => ({ // Add isOver and canDrop
+  const [{ isOver, canDrop }, drop] = useDrop(() => ({
     accept: 'THERAPIST',
     drop: (item) => {
       if (!finalBlockedStatus) {
@@ -128,7 +153,7 @@ const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked }
   }
   if (isToday) {
     backgroundColor = '#E6FFFA'; // Light teal for today
-    dayNumberColor = '#2C7A7B';    // Stronger teal for today's number
+    dayNumberColor = '#2C7A7B';    // Stronger teal for today's number
   }
 
   // Style for when a therapist is being dragged over a droppable day
@@ -140,15 +165,15 @@ const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked }
     <div
       ref={drop}
       style={{
-        padding: '12px', // Increased padding for more inner space
-        minHeight: '160px', // **Significantly increased min-height for more space for larger cards**
+        padding: '12px',
+        minHeight: '160px',
         position: 'relative',
         backgroundColor: backgroundColor,
         borderRadius: '6px',
         boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03)',
         display: 'flex',
         flexDirection: 'column',
-        gap: '10px', // **More space between items inside the day cell**
+        gap: '10px',
         border: `1px solid ${isToday ? '#4FD1C5' : '#E2E8F0'}`,
         transition: 'background-color 0.2s ease-in-out',
       }}
@@ -180,14 +205,14 @@ const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked }
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '12px', // **Increased gap inside the therapist card**
-                padding: '8px 12px', // **More padding for assigned card**
+                gap: '12px',
+                padding: '8px 12px',
                 backgroundColor: '#E6FFFA',
                 color: '#234E52',
-                borderRadius: '8px', // **Slightly larger border-radius for emphasis**
+                borderRadius: '8px',
                 justifyContent: 'space-between',
-                fontWeight: '600', // **Bolder text for better readability**
-                boxShadow: '0 1px 4px rgba(0,0,0,0.08)', // **Subtle shadow for card lift**
+                fontWeight: '600',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
               }}
             >
               <div
@@ -195,18 +220,18 @@ const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked }
                   backgroundColor: '#00796B',
                   color: 'white',
                   borderRadius: '50%',
-                  width: '40px', // **Significantly larger circle for initials**
-                  height: '40px', // **Significantly larger circle for initials**
+                  width: '40px',
+                  height: '40px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '1.1rem', // **Larger font for initials**
+                  fontSize: '1.1rem',
                   flexShrink: 0,
                 }}
               >
                 {initials}
               </div>
-              <span style={{ fontSize: '1.05rem', flexGrow: 1 }}>{therapist}</span> {/* **Larger font for name** */}
+              <span style={{ fontSize: '1.05rem', flexGrow: 1 }}>{therapist}</span>
               <button
                 onClick={() => removeTherapist(therapist, day.dayKey)}
                 style={{
@@ -218,7 +243,7 @@ const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked }
                   fontWeight: 'bold',
                   padding: '2px',
                   lineHeight: '1',
-                  fontSize: '1.2rem', // **Larger 'x' for removal**
+                  fontSize: '1.2rem',
                 }}
                 title={`Remove ${therapist}`}
               >
@@ -230,7 +255,7 @@ const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked }
       ) : (
         !finalBlockedStatus && (
           <div style={{
-            fontSize: '0.85rem', // Slightly larger placeholder text
+            fontSize: '0.85rem',
             color: '#A0AEC0',
             textAlign: 'center',
             marginTop: 'auto',
@@ -242,21 +267,22 @@ const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked }
       )}
       {finalBlockedStatus && !isToday && (
         <div style={{
-          fontSize: '0.8rem', // Slightly larger blocked/weekend label
+          fontSize: '0.8rem',
           color: '#718096',
           textAlign: 'center',
           marginTop: 'auto',
           marginBottom: 'auto'
         }}>
-          {isWeekend && !blockedDays.includes(day.dayKey) ? 'Weekend' : 'Blocked'}
+          {isWeekend && !isBlocked ? 'Weekend' : 'Blocked'}
         </div>
       )}
     </div>
   );
 };
 
-// Calendar Grid Component
-const Calendar = ({ monthDays, moveTherapist, removeTherapist, todayDate }) => {
+// --- Calendar Grid Component ---
+// This component now receives 'blockedDaysForYear' dynamically
+const Calendar = ({ monthDays, moveTherapist, removeTherapist, todayDate, blockedDaysForYear }) => {
   const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   // Get the first day of the month to determine padding needed for the grid
@@ -288,12 +314,13 @@ const Calendar = ({ monthDays, moveTherapist, removeTherapist, todayDate }) => {
           <div key={`empty-${index}`} style={{
             backgroundColor: '#F7FAFC',
             borderRadius: '6px',
-            minHeight: '160px', // **Match CalendarDay minHeight**
+            minHeight: '160px',
           }} />
         ))}
         {monthDays.map((day) => {
           const isToday = todayDate && day.date.toDateString() === todayDate.toDateString();
-          const isBlocked = blockedDays.includes(day.dayKey);
+          // Use the dynamic blockedDaysForYear passed as a prop
+          const isBlocked = blockedDaysForYear.includes(day.dayKey);
           return (
             <CalendarDay
               key={day.dayKey}
@@ -310,13 +337,25 @@ const Calendar = ({ monthDays, moveTherapist, removeTherapist, todayDate }) => {
   );
 };
 
+// --- Main App Component ---
 const App = () => {
-  const [currentMonth, setCurrentMonth] = useState(0);
-  const [calendar, setCalendar] = useState(get2025Calendar());
-  const [todayDate, setTodayDate] = useState(null);
-  const [autoRosterTriggered, setAutoRosterTriggered] = useState(false);
+  // State for the currently displayed year, defaults to current actual year
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  // State for the currently displayed month (0-indexed)
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
+
+  // State to hold calendar data for all years you want to support
+  // Initialized with data for 2025 and 2026
+  const [calendarData, setCalendarData] = useState(() => ({
+    2025: getCalendarForYear(2025),
+    2026: getCalendarForYear(2026),
+  }));
+
+  const [todayDate, setTodayDate] = useState(null); // Used for "Today" highlight
+  const [autoRosterTriggered, setAutoRosterTriggered] = useState(false); // No change needed here
+
+  // Working From Home data, no change needed for 2026 functionality
   const [workingFromHome, setWorkingFromHome] = useState(
-    // Update this section
     {
       "Dominic Yeo": { Monday: false, Tuesday: true, Wednesday: true, Thursday: true, Friday: false },
       "Kirsty Png": { Monday: false, Tuesday: false, Wednesday: true, Thursday: false, Friday: false },
@@ -331,84 +370,119 @@ const App = () => {
     }
   );
 
+  // Determine which blocked days array to use based on the currentYear state
+  const currentBlockedDays = currentYear === 2025 ? blockedDays2025 : blockedDays2026;
+
+  // Calculate assignment counts for the *currently displayed month and year*
   const assignmentCounts = therapists.reduce((acc, therapist) => {
-    acc[therapist] = calendar[currentMonth].filter((day) =>
+    acc[therapist] = calendarData[currentYear][currentMonth].filter((day) =>
       day.therapists.includes(therapist)
     ).length;
     return acc;
   }, {});
 
-  const currentDate = new Date();
-  const currentDay = currentDate.getDate();
-  const currentMonthIndex = currentDate.getMonth();
-  const currentYear = currentDate.getFullYear();
+  const actualCurrentDate = new Date();
+  const actualCurrentDay = actualCurrentDate.getDate();
+  const actualCurrentMonthIndex = actualCurrentDate.getMonth();
+  const actualCurrentYear = actualCurrentDate.getFullYear();
+
+  // Effect to manage 'today' highlight and month display when year changes
+  useEffect(() => {
+    // Clear "today" highlight when switching years
+    setTodayDate(null);
+    // If the selected year is the actual current year, jump to the current month and highlight today
+    if (currentYear === actualCurrentYear) {
+      setCurrentMonth(actualCurrentMonthIndex);
+      setTodayDate(new Date(actualCurrentYear, actualCurrentMonthIndex, actualCurrentDay));
+    } else {
+      // If switching to a historical/future year, default to January (0)
+      // You can adjust this to keep the same month index if preferred
+      setCurrentMonth(0);
+    }
+  }, [currentYear, actualCurrentYear, actualCurrentMonthIndex, actualCurrentDay]); // Dependencies
 
   const goToToday = () => {
-    setCurrentMonth(currentMonthIndex);
-    setTodayDate(new Date(currentYear, currentMonthIndex, currentDay));
+    // Only go to 'Today' if the selected year matches the actual current year
+    if (currentYear === actualCurrentYear) {
+      setCurrentMonth(actualCurrentMonthIndex);
+      setTodayDate(new Date(actualCurrentYear, actualCurrentMonthIndex, actualCurrentDay));
+    } else {
+      alert("Cannot go to 'Today' in a different year. Please switch to the current year.");
+    }
   };
 
   const moveTherapist = (name, dayKey) => {
-    setCalendar((prevCalendar) => {
-      const updatedCalendar = prevCalendar.map((month, index) => {
-        if (index === currentMonth) {
-          return month.map((day) => {
-            if (day.dayKey === dayKey && !blockedDays.includes(dayKey) && !day.therapists.includes(name)) {
-              // Check if the day is a weekend
-              const dateObj = new Date(day.dayKey.split('-')[0], day.dayKey.split('-')[1] - 1, day.dayKey.split('-')[2]);
-              const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
-              if (!isWeekend) { // Only add if not a weekend
-                return { ...day, therapists: [...day.therapists, name] };
-              }
-            }
-            return day;
-          });
+    setCalendarData((prevCalendarData) => {
+      // Get a mutable copy of the current year's calendar
+      const yearCalendar = [...prevCalendarData[currentYear]];
+      // Map over the current month's days for the current year
+      const updatedMonth = yearCalendar[currentMonth].map((day) => {
+        // Ensure we use 'currentBlockedDays' for the current year
+        if (day.dayKey === dayKey && !currentBlockedDays.includes(dayKey) && !day.therapists.includes(name)) {
+          const dateObj = new Date(day.dayKey.split('-')[0], day.dayKey.split('-')[1] - 1, day.dayKey.split('-')[2]);
+          const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
+          if (!isWeekend) {
+            return { ...day, therapists: [...day.therapists, name] };
+          }
         }
-        return month;
+        return day;
       });
-      return updatedCalendar;
+
+      // Update the specific month in the current year's calendar
+      yearCalendar[currentMonth] = updatedMonth;
+
+      // Return the updated calendarData object with the modified year
+      return {
+        ...prevCalendarData,
+        [currentYear]: yearCalendar,
+      };
     });
   };
 
-
   const removeTherapist = (name, dayKey) => {
-    setCalendar((prevCalendar) => {
-      const updatedCalendar = prevCalendar.map((month, index) => {
-        if (index === currentMonth) {
-          return month.map((day) => {
-            if (day.dayKey === dayKey) {
-              return { ...day, therapists: day.therapists.filter((t) => t !== name) };
-            }
-            return day;
-          });
+    setCalendarData((prevCalendarData) => {
+      const yearCalendar = [...prevCalendarData[currentYear]];
+      const updatedMonth = yearCalendar[currentMonth].map((day) => {
+        if (day.dayKey === dayKey) {
+          return { ...day, therapists: day.therapists.filter((t) => t !== name) };
         }
-        return month;
+        return day;
       });
-      return updatedCalendar;
+
+      yearCalendar[currentMonth] = updatedMonth;
+      return {
+        ...prevCalendarData,
+        [currentYear]: yearCalendar,
+      };
     });
   };
 
   const resetCalendar = () => {
-    setCalendar(get2025Calendar());
+    // Reset only the currently selected year's calendar
+    setCalendarData((prevCalendarData) => ({
+      ...prevCalendarData,
+      [currentYear]: getCalendarForYear(currentYear), // Re-generate calendar for current year
+    }));
     setAutoRosterTriggered(false);
   };
 
   const saveAsPNG = () => {
-    const calendarContainer = document.getElementById("calendar-container-content"); // Target the inner content for better PNG
+    const calendarContainer = document.getElementById("calendar-container-content");
     if (!calendarContainer) {
       console.error("Calendar container content not found for PNG export.");
       return;
     }
     html2canvas(calendarContainer, {
-      backgroundColor: "#FFFFFF", // Calendar content itself is white
+      backgroundColor: "#FFFFFF",
       useCORS: true,
       scale: 2
     }).then((canvas) => {
       const imgData = canvas.toDataURL("image/png");
       const link = document.createElement("a");
-      const currentMonthName = calendar[currentMonth][0].date.toLocaleString("default", { month: "long" });
+      const currentMonthName = calendarData[currentYear][currentMonth][0].date.toLocaleString("default", { month: "long" });
+      // Include the current year in the downloaded filename
       link.href = imgData;
-      link.download = `Therapist_Roster_${currentMonthName}_2025.png`;
+      link.download = `Therapist_Roster_${currentMonthName}_${currentYear}.png`;
       link.click();
     }).catch((error) => {
       console.error("Error generating PNG:", error);
@@ -416,81 +490,64 @@ const App = () => {
   };
 
   const autoRoster = () => {
-    setCalendar((prevCalendar) => {
-      const updatedCalendar = [...prevCalendar];
-      const currentMonthData = [...updatedCalendar[currentMonth]];
+    setCalendarData((prevCalendarData) => {
+      const updatedCalendarData = { ...prevCalendarData }; // Copy the entire calendarData object
+      const currentYearCalendar = [...updatedCalendarData[currentYear]]; // Get a mutable copy of the current year's calendar
+      const currentMonthData = [...currentYearCalendar[currentMonth]]; // Get a mutable copy of the current month's data
 
       const monthlyAssignmentCounts = therapists.reduce((acc, t) => ({ ...acc, [t]: 0 }), {});
 
-      // Estimate total assignable slots for the month to get a rough average
-      // This is an approximation because WFH impacts actual availability dynamically
       let totalPossibleSlots = 0;
       currentMonthData.forEach(day => {
         const isWeekend = day.date.getDay() === 0 || day.date.getDay() === 6;
-        if (!blockedDays.includes(day.dayKey) && !isWeekend) {
+        // Use currentBlockedDays to check for blocked status
+        if (!currentBlockedDays.includes(day.dayKey) && !isWeekend) {
           totalPossibleSlots++;
         }
       });
-      const targetAverageShifts = Math.max(1, totalPossibleSlots / therapists.length); // Avoid division by zero, ensure at least 1
-      // Define a threshold for being "significantly behind"
-      // This is a heuristic. Could be 1, 2, or a percentage of targetAverageShifts.
-      const LAGGING_THRESHOLD = 2; // e.g., if someone is 2 shifts below the current average of those assigned
+      const targetAverageShifts = Math.max(1, totalPossibleSlots / therapists.length);
+      const LAGGING_THRESHOLD = 2;
 
-      // Order for consideration, can be shuffled once at start for more tie-breaking randomness
       let therapistConsiderationOrder = [...therapists].sort(() => Math.random() - 0.5);
 
-
       const newMonthDays = currentMonthData.map((day) => {
-        const newDay = { ...day, therapists: [...day.therapists] }; // Work with a new day object
+        const newDay = { ...day, therapists: [...day.therapists] };
         const isWeekend = newDay.date.getDay() === 0 || newDay.date.getDay() === 6;
         const dayOfWeek = newDay.date.toLocaleString('default', { weekday: 'long' });
 
         if (
-          newDay.therapists.length === 0 && // Only if unassigned
-          !blockedDays.includes(newDay.dayKey) &&
+          newDay.therapists.length === 0 &&
+          !currentBlockedDays.includes(newDay.dayKey) && // Use currentBlockedDays
           !isWeekend
         ) {
           let assignedThisDay = false;
 
-          // 1. Get all therapists NOT WFH on this day
           const availableToday = therapistConsiderationOrder.filter(
             (t) => !workingFromHome[t]?.[dayOfWeek]
           );
 
           if (availableToday.length > 0) {
-            // Sort them by current assignment count
             availableToday.sort((a, b) => monthlyAssignmentCounts[a] - monthlyAssignmentCounts[b]);
 
-            // Calculate current average of *assigned* shifts (can change as roster fills)
             const currentAssignedValues = Object.values(monthlyAssignmentCounts).filter(c => c > 0);
             const currentAverage = currentAssignedValues.length > 0
               ? currentAssignedValues.reduce((sum, val) => sum + val, 0) / currentAssignedValues.length
               : 0;
 
-            // 2. Try to pick a "lagging" therapist first from those available today
             let therapistToAssign = null;
 
-            // Find lagging therapists among those available today
             const laggingAndAvailable = availableToday.filter(
-              (t) => monthlyAssignmentCounts[t] < Math.max(1, currentAverage - LAGGING_THRESHOLD / 2) || // Significantly below current dynamic average
-                monthlyAssignmentCounts[t] < Math.max(1, targetAverageShifts - LAGGING_THRESHOLD) // Significantly below overall month target
+              (t) => monthlyAssignmentCounts[t] < Math.max(1, currentAverage - LAGGING_THRESHOLD / 2) ||
+                monthlyAssignmentCounts[t] < Math.max(1, targetAverageShifts - LAGGING_THRESHOLD)
             );
 
-            // Sort lagging and available by their current count (already partially done by availableToday sort)
-            // No, re-sort them explicitly to ensure the absolute lowest gets it
             laggingAndAvailable.sort((a, b) => monthlyAssignmentCounts[a] - monthlyAssignmentCounts[b]);
-
 
             if (laggingAndAvailable.length > 0) {
               therapistToAssign = laggingAndAvailable[0];
-              // console.log(`Day ${newDay.dayKey}: Assigning LAGGING ${therapistToAssign} (Count: ${monthlyAssignmentCounts[therapistToAssign]})`);
             } else {
-              // 3. If no "lagging" therapist is available, pick the one with the fewest shifts
-              // from the general pool of those available today.
-              // `availableToday` is already sorted by count.
               if (availableToday.length > 0) {
                 therapistToAssign = availableToday[0];
-                // console.log(`Day ${newDay.dayKey}: Assigning REGULAR ${therapistToAssign} (Count: ${monthlyAssignmentCounts[therapistToAssign]}) from available pool`);
               }
             }
 
@@ -499,22 +556,21 @@ const App = () => {
               monthlyAssignmentCounts[therapistToAssign]++;
               assignedThisDay = true;
 
-              // Rotate the main consideration order to help with tie-breaking over time
               therapistConsiderationOrder = [
                 ...therapistConsiderationOrder.filter(t => t !== therapistToAssign),
                 therapistToAssign
               ];
             }
           }
-          // if (!assignedThisDay) {
-          //    console.warn(`Could not assign anyone to ${newDay.dayKey}`);
-          // }
         }
         return newDay;
       });
 
-      updatedCalendar[currentMonth] = newMonthDays;
-      return updatedCalendar;
+      // Update the specific month within the current year's calendar
+      currentYearCalendar[currentMonth] = newMonthDays;
+      // Update the current year's calendar within the overall calendarData
+      updatedCalendarData[currentYear] = currentYearCalendar;
+      return updatedCalendarData; // Return the entire updated state object
     });
     setAutoRosterTriggered(true);
   };
@@ -529,7 +585,6 @@ const App = () => {
     fontWeight: '500',
     transition: 'background-color 0.2s, box-shadow 0.2s',
     boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
-    // Add hover effects via CSS if possible, or use onMouseEnter/Leave for JS-in-CSS
   };
 
   const changeMonth = (direction) => {
@@ -551,7 +606,7 @@ const App = () => {
     padding: '15px',
     borderRadius: '8px',
     boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-    marginBottom: '20px', // Added for spacing between sidebar cards
+    marginBottom: '20px',
   };
   const tableCellStyle = { border: '1px solid #E2E8F0', padding: '8px', textAlign: 'center' };
   const tableHeaderStyle = { ...tableCellStyle, backgroundColor: '#F7FAFC', fontWeight: '600', color: '#4A5568' };
@@ -563,38 +618,38 @@ const App = () => {
       <div style={{
         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"',
         padding: '20px',
-        backgroundColor: '#F9FAFB', // Light page background
+        backgroundColor: '#F9FAFB',
         minHeight: '100vh',
       }}>
         {/* 2. Main Content Wrapper (Flex Container) */}
         <div style={{
           display: 'flex',
-          gap: '30px', // Space between sidebar and calendar
-          maxWidth: '1800px', // Max width for large screens
-          margin: '0 auto',    // Center content
+          gap: '30px',
+          maxWidth: '1800px',
+          margin: '0 auto',
         }}>
 
           {/* 3. Sidebar Area */}
           <div style={{
-            flex: '0 0 400px', // Fixed width for the sidebar
+            flex: '0 0 400px',
             display: 'flex',
             flexDirection: 'column',
-            gap: '20px' // Space between sections in the sidebar
+            gap: '20px'
           }}>
-            <div style={cardStyle}> {/* Therapists List in a Card */}
+            <div style={cardStyle}>
               <h2 style={{ marginTop: 0, marginBottom: '15px', color: '#1A202C', fontSize: '1.25rem' }}>Therapists</h2>
               {therapists.map((name, index) => (
                 <Therapist key={index} name={name} />
               ))}
             </div>
 
-            <div style={cardStyle}> {/* WFH Settings in a Card */}
+            <div style={cardStyle}>
               <h3 style={{ marginTop: 0, marginBottom: '15px', color: '#2D3748', fontSize: '1.1rem' }}>Set Working from Home Days</h3>
               <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: '0.9rem' }}>
                 <thead>
                   <tr>
                     <th style={tableHeaderStyle}>Therapist</th>
-                    {['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map((day) => ( // Shortened day names
+                    {['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map((day) => (
                       <th key={day} style={tableHeaderStyle}>{day}</th>
                     ))}
                   </tr>
@@ -608,13 +663,13 @@ const App = () => {
                           <input
                             type="checkbox"
                             style={{ cursor: 'pointer' }}
-                            checked={workingFromHome[therapist]?.[day] || false} // Safely access nested property
+                            checked={workingFromHome[therapist]?.[day] || false}
                             onChange={() =>
                               setWorkingFromHome((prev) => ({
                                 ...prev,
                                 [therapist]: {
                                   ...prev[therapist],
-                                  [day]: !prev[therapist]?.[day], // Safely toggle
+                                  [day]: !prev[therapist]?.[day],
                                 },
                               }))
                             }
@@ -627,11 +682,11 @@ const App = () => {
               </table>
             </div>
 
-            <div style={cardStyle}> {/* Assignment Tracker in a Card */}
+            <div style={cardStyle}>
               <h3 style={{ marginTop: 0, marginBottom: '15px', color: '#2D3748', fontSize: '1.1rem' }}>Therapist Assignment Tracker</h3>
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', // Responsive columns
+                gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
                 gap: '12px',
               }}>
                 {Object.entries(assignmentCounts).map(([therapist, count]) => (
@@ -639,10 +694,9 @@ const App = () => {
                     key={therapist}
                     style={{
                       padding: '12px',
-                      backgroundColor: '#E6FFFA', // Light teal, matching calendar items
+                      backgroundColor: '#E6FFFA',
                       color: '#234E52',
                       borderRadius: '6px',
-                      // boxShadow: '0 1px 3px rgba(0,0,0,0.05)', // Optional: if you want individual shadows
                       fontSize: '0.9rem'
                     }}
                   >
@@ -655,23 +709,39 @@ const App = () => {
           </div>
 
           {/* 4. Calendar Area (Main Content) */}
-          {/* Outer div for the calendar "card" styling */}
           <div style={{
-            flex: '1', // Takes remaining space
+            flex: '1',
             backgroundColor: '#FFFFFF',
             padding: '25px',
-            borderRadius: '12px', // Larger radius for the main card
-            boxShadow: '0 6px 18px rgba(0,0,0,0.07)', // More prominent shadow for the main card
+            borderRadius: '12px',
+            boxShadow: '0 6px 18px rgba(0,0,0,0.07)',
           }}>
-            {/* This inner div will be targeted by html2canvas */}
             <div id="calendar-container-content">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
                 <h2 style={{ color: '#1A202C', margin: 0, fontSize: '1.5rem' }}>
-                  {calendar[currentMonth][0].date.toLocaleString("default", { month: "long" })} 2025
+                  {calendarData[currentYear][currentMonth][0].date.toLocaleString("default", { month: "long" })} {currentYear}
                 </h2>
-                <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  {/* Year Selection Dropdown */}
+                  <select
+                    value={currentYear}
+                    onChange={(e) => setCurrentYear(parseInt(e.target.value))}
+                    style={{
+                      padding: '10px 14px',
+                      border: '1px solid #CBD5E0',
+                      borderRadius: '6px',
+                      backgroundColor: '#FFFFFF',
+                      fontSize: '1rem',
+                      cursor: 'pointer',
+                      outline: 'none',
+                    }}
+                  >
+                    <option value={2025}>2025</option>
+                    <option value={2026}>2026</option>
+                  </select>
+
                   <button
-                    type="button" // Good practice
+                    type="button"
                     style={{ ...buttonStyle, marginRight: '10px' }}
                     onClick={() => changeMonth('prev')}
                     onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }}
@@ -680,7 +750,7 @@ const App = () => {
                     ← Previous
                   </button>
                   <button
-                    type="button" // Good practice
+                    type="button"
                     style={buttonStyle}
                     onClick={() => changeMonth('next')}
                     onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }}
@@ -692,12 +762,14 @@ const App = () => {
               </div>
 
               <Calendar
-                monthDays={calendar[currentMonth]}
+                monthDays={calendarData[currentYear][currentMonth]}
                 moveTherapist={moveTherapist}
                 removeTherapist={removeTherapist}
                 todayDate={todayDate}
+                // Pass the dynamically selected blocked days to the Calendar component
+                blockedDaysForYear={currentBlockedDays}
               />
-            </div> {/* End of calendar-container-content */}
+            </div>
 
             <div style={{ marginTop: '30px', display: 'flex', gap: '12px', flexWrap: 'wrap', borderTop: '1px solid #E2E8F0', paddingTop: '20px' }}>
               <button type="button" style={buttonStyle} onClick={goToToday} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}>Today</button>
@@ -721,8 +793,6 @@ const App = () => {
 };
 
 export default App;
-
-
 
 
 
