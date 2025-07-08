@@ -22,20 +22,20 @@ const blockedDays2025 = [
 ];
 
 const blockedDays2026 = [
-  "2026-01-01",    // New Year’s Day (Thursday)
-  "2026-02-17",    // Chinese New Year (Tuesday)
-  "2026-02-18",    // Chinese New Year (Wednesday)
-  "2026-03-21",    // Hari Raya Puasa (Saturday)
-  "2026-04-03",    // Good Friday (Friday)
-  "2026-05-01",    // Labour Day (Friday)
-  "2026-05-27",    // Hari Raya Haji (Wednesday)
-  "2026-05-31",    // Vesak Day (Sunday)
-  "2026-06-01",    // Vesak Day (Observed - Monday, since May 31 is a Sunday)
-  "2026-08-09",    // National Day (Sunday)
-  "2026-08-10",    // National Day (Observed - Monday, since Aug 9 is a Sunday)
-  "2026-11-08",    // Deepavali (Sunday)
-  "2026-11-09",    // Deepavali (Observed - Monday, since Nov 8 is a Sunday)
-  "2026-12-25"     // Christmas Day (Friday)
+  "2026-01-01",     // New Year’s Day (Thursday)
+  "2026-02-17",     // Chinese New Year (Tuesday)
+  "2026-02-18",     // Chinese New Year (Wednesday)
+  "2026-03-21",     // Hari Raya Puasa (Saturday)
+  "2026-04-03",     // Good Friday (Friday)
+  "2026-05-01",     // Labour Day (Friday)
+  "2026-05-27",     // Hari Raya Haji (Wednesday)
+  "2026-05-31",     // Vesak Day (Sunday)
+  "2026-06-01",     // Vesak Day (Observed - Monday, since May 31 is a Sunday)
+  "2026-08-09",     // National Day (Sunday)
+  "2026-08-10",     // National Day (Observed - Monday, since Aug 9 is a Sunday)
+  "2026-11-08",     // Deepavali (Sunday)
+  "2026-11-09",     // Deepavali (Observed - Monday, since Nov 8 is a Sunday)
+  "2026-12-25"      // Christmas Day (Friday)
 ];
 
 // Helper function to get the number of days in a month for a given year
@@ -576,10 +576,25 @@ const App = () => {
       console.error("Calendar container content not found for PNG export.");
       return;
     }
+
+    // Temporarily add a style to extend the canvas area for the screenshot
+    const style = document.createElement('style');
+    style.id = 'png-export-styles';
+    style.innerHTML = `
+      #calendar-container-content {
+        padding-right: 150px !important; /* Adjust as needed to make sure generated text is visible */
+        padding-top: 50px !important; /* Add padding to the top for the month text */
+      }
+      #calendar-container-content h2 .generated-text {
+        font-size: 0.7em !important; /* Make the generated text smaller for PNG */
+      }
+    `;
+    document.head.appendChild(style);
+
     html2canvas(calendarContainer, {
       backgroundColor: "#FFFFFF",
       useCORS: true,
-      scale: 2
+      scale: 2 // Increase scale for better resolution
     }).then((canvas) => {
       const imgData = canvas.toDataURL("image/png");
       const link = document.createElement("a");
@@ -589,6 +604,12 @@ const App = () => {
       link.click();
     }).catch((error) => {
       console.error("Error generating PNG:", error);
+    }).finally(() => {
+      // Remove the temporary style
+      const tempStyle = document.getElementById('png-export-styles');
+      if (tempStyle) {
+        tempStyle.remove();
+      }
     });
   };
 
@@ -868,7 +889,7 @@ const App = () => {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
                             <h2 style={{ color: '#1A202C', margin: 0, fontSize: '1.5rem' }}>
                                 {calendarData[currentYear]?.[currentMonth]?.[0]?.date.toLocaleString("default", { month: "long" })} {currentYear}
-                                <span style={{ fontSize: '0.8em', color: '#666', marginLeft: '15px' }}>
+                                <span className="generated-text" style={{ fontSize: '0.8em', color: '#666', marginLeft: '15px' }}>
                                     (Generated: {liveDateTime})
                                 </span>
                             </h2>
