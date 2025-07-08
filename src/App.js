@@ -3,7 +3,7 @@ import { useDrag, useDrop } from 'react-dnd';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import html2canvas from 'html2canvas';
-import LZString from 'lz-string'; // Import lz-string
+import LZString from 'lz-string'; // Import lz-string for URL compression
 
 // Define therapist names
 const therapists = [
@@ -328,6 +328,8 @@ const Calendar = ({ monthDays, moveTherapist, removeTherapist, todayDate, blocke
 const App = () => {
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
+  // New state to manage active tab
+  const [activeTab, setActiveTab] = useState('calendar'); // 'calendar' or 'patchNotes'
 
   const [calendarData, setCalendarData] = useState(() => ({
     2025: getCalendarForYear(2025),
@@ -366,9 +368,37 @@ const App = () => {
   const actualCurrentMonthIndex = actualCurrentDate.getMonth();
   const actualCurrentYear = actualCurrentDate.getFullYear();
 
+  // Patch Notes Content Data
+  const patchNotes = [
+    {
+      version: "1.0.1",
+      date: "July 8, 2025", // Current Date
+      changes: [
+        "Added 'Share Link' functionality to save and load calendar state via URL.",
+        "Implemented LZString compression for significantly shorter shareable URLs.",
+        "Included timestamp in shared data for unique link generation.",
+        "Updated 'Reset Calendar' button to also reset WFH settings to their initial state.",
+        "Introduced a 'Patch Notes' tab to view application updates."
+      ]
+    },
+    {
+      version: "1.0.0",
+      date: "July 7, 2025",
+      changes: [
+        "Initial release of the Therapist Roster application.",
+        "Drag-and-drop therapist assignment to calendar days.",
+        "Support for 2025 and 2026 calendar years with pre-defined blocked holidays.",
+        "Automatic detection and styling for weekends and blocked holidays.",
+        "Configurable Working From Home (WFH) settings for each therapist.",
+        "Intelligent 'Auto Roster' feature for balanced therapist assignments.",
+        "Real-time therapist assignment tracker.",
+        "Ability to save the current calendar view as a PNG image."
+      ]
+    }
+  ];
+
   // Helper functions for shareable link using lz-string
   const compressData = (data) => {
-    // We only need to store dayKey and therapists. Date objects are recreated.
     const serializedCalendar = {};
     for (const year in data.calendarData) {
       serializedCalendar[year] = data.calendarData[year].map(month =>
@@ -378,19 +408,16 @@ const App = () => {
         }))
       );
     }
-    // Convert the entire payload to a JSON string first
     const payload = JSON.stringify({
-      timestamp: Date.now(), // Added timestamp for uniqueness per generated link
+      timestamp: Date.now(),
       calendar: serializedCalendar,
       wfh: data.workingFromHome
     });
-    // Then compress and encode for URL
     return LZString.compressToEncodedURIComponent(payload);
   };
 
   const decompressData = (compressedString) => {
     try {
-      // Decompress and decode from URL safe string
       const decompressedPayload = LZString.decompressFromEncodedURIComponent(compressedString);
       if (!decompressedPayload) {
           console.error("Decompression resulted in null. Data might be corrupted or empty.");
@@ -402,7 +429,6 @@ const App = () => {
       for (const year in parsed.calendar) {
         deserializedCalendar[year] = parsed.calendar[year].map(month =>
           month.map(day => {
-            // Recreate the Date object from dayKey
             const [yearStr, monthStr, dayStr] = day.dayKey.split('-');
             const dateObj = new Date(parseInt(yearStr), parseInt(monthStr) - 1, parseInt(dayStr));
             return {
@@ -416,7 +442,7 @@ const App = () => {
       return {
         calendarData: deserializedCalendar,
         workingFromHome: parsed.wfh || {},
-        timestamp: parsed.timestamp // The timestamp will be here if needed for display/logging
+        timestamp: parsed.timestamp
       };
     } catch (e) {
       console.error("Failed to decompress data:", e);
@@ -447,14 +473,10 @@ const App = () => {
         setCalendarData(decompressed.calendarData);
         setWorkingFromHome(decompressed.workingFromHome);
         console.log(`Calendar and WFH data loaded from shared link (Timestamp: ${decompressed.timestamp || 'N/A'})!`);
-        // Remove the 'data' parameter from the URL after loading
-        // This makes the URL clean, but also means that a page refresh
-        // will revert to the default state unless you add state persistence
-        // to localStorage or similar.
         window.history.replaceState({}, document.title, window.location.pathname);
       }
     }
-  }, []); // Run only once on component mount
+  }, []);
 
   const goToToday = () => {
     if (currentYear === actualCurrentYear) {
@@ -548,13 +570,12 @@ const App = () => {
     });
   };
 
-  // Function to generate sharable link
   const generateShareLink = () => {
     const dataToShare = {
       calendarData: calendarData,
       workingFromHome: workingFromHome
     };
-    const compressedEncodedData = compressData(dataToShare); // This uses lz-string
+    const compressedEncodedData = compressData(dataToShare);
     const shareableUrl = `${window.location.origin}${window.location.pathname}?data=${compressedEncodedData}`;
 
     navigator.clipboard.writeText(shareableUrl)
@@ -656,6 +677,19 @@ const App = () => {
     fontWeight: '500',
     transition: 'background-color 0.2s, box-shadow 0.2s',
     boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+  };
+
+  const tabButtonStyle = {
+    padding: '12px 20px',
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    fontSize: '1.1rem',
+    fontWeight: '600',
+    transition: 'color 0.2s, border-bottom 0.2s',
+    flexGrow: 1,
+    textAlign: 'center',
+    outline: 'none',
   };
 
   const changeMonth = (direction) => {
@@ -781,82 +815,130 @@ const App = () => {
             borderRadius: '12px',
             boxShadow: '0 6px 18px rgba(0,0,0,0.07)',
           }}>
-            <div id="calendar-container-content">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
-                <h2 style={{ color: '#1A202C', margin: 0, fontSize: '1.5rem' }}>
-                  {calendarData[currentYear]?.[currentMonth]?.[0]?.date.toLocaleString("default", { month: "long" })} {currentYear}
-                </h2>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <select
-                    value={currentYear}
-                    onChange={(e) => setCurrentYear(parseInt(e.target.value))}
+            {/* Tab Navigation Buttons */}
+            <div style={{ display: 'flex', marginBottom: '25px', borderBottom: '1px solid #E2E8F0' }}>
+                <button
+                    onClick={() => setActiveTab('calendar')}
                     style={{
-                      padding: '10px 14px',
-                      border: '1px solid #CBD5E0',
-                      borderRadius: '6px',
-                      backgroundColor: '#FFFFFF',
-                      fontSize: '1rem',
-                      cursor: 'pointer',
-                      outline: 'none',
+                        ...tabButtonStyle,
+                        borderBottom: activeTab === 'calendar' ? '2px solid #3182CE' : 'none',
+                        color: activeTab === 'calendar' ? '#3182CE' : '#4A5568',
                     }}
-                  >
-                    <option value={2025}>2025</option>
-                    <option value={2026}>2026</option>
-                  </select>
+                >
+                    Calendar
+                </button>
+                <button
+                    onClick={() => setActiveTab('patchNotes')}
+                    style={{
+                        ...tabButtonStyle,
+                        borderBottom: activeTab === 'patchNotes' ? '2px solid #3182CE' : 'none',
+                        color: activeTab === 'patchNotes' ? '#3182CE' : '#4A5568',
+                    }}
+                >
+                    Patch Notes
+                </button>
+            </div>
 
-                  <button
-                    type="button"
-                    style={{ ...buttonStyle, marginRight: '10px' }}
-                    onClick={() => changeMonth('prev')}
-                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}
-                  >
-                    ← Previous
-                  </button>
-                  <button
-                    type="button"
-                    style={buttonStyle}
-                    onClick={() => changeMonth('next')}
-                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}
-                  >
-                    Next →
-                  </button>
+            {/* Conditional Rendering based on activeTab */}
+            {activeTab === 'calendar' && (
+                <>
+                    <div id="calendar-container-content">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
+                            <h2 style={{ color: '#1A202C', margin: 0, fontSize: '1.5rem' }}>
+                                {calendarData[currentYear]?.[currentMonth]?.[0]?.date.toLocaleString("default", { month: "long" })} {currentYear}
+                            </h2>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <select
+                                    value={currentYear}
+                                    onChange={(e) => setCurrentYear(parseInt(e.target.value))}
+                                    style={{
+                                        padding: '10px 14px',
+                                        border: '1px solid #CBD5E0',
+                                        borderRadius: '6px',
+                                        backgroundColor: '#FFFFFF',
+                                        fontSize: '1rem',
+                                        cursor: 'pointer',
+                                        outline: 'none',
+                                    }}
+                                >
+                                    <option value={2025}>2025</option>
+                                    <option value={2026}>2026</option>
+                                </select>
+
+                                <button
+                                    type="button"
+                                    style={{ ...buttonStyle, marginRight: '10px' }}
+                                    onClick={() => changeMonth('prev')}
+                                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }}
+                                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}
+                                >
+                                    ← Previous
+                                </button>
+                                <button
+                                    type="button"
+                                    style={buttonStyle}
+                                    onClick={() => changeMonth('next')}
+                                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }}
+                                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}
+                                >
+                                    Next →
+                                </button>
+                            </div>
+                        </div>
+
+                        <Calendar
+                            monthDays={calendarData[currentYear][currentMonth]}
+                            moveTherapist={moveTherapist}
+                            removeTherapist={removeTherapist}
+                            todayDate={todayDate}
+                            blockedDaysForYear={currentBlockedDays}
+                        />
+                    </div>
+
+                    <div style={{ marginTop: '30px', display: 'flex', gap: '12px', flexWrap: 'wrap', borderTop: '1px solid #E2E8F0', paddingTop: '20px' }}>
+                        <button type="button" style={buttonStyle} onClick={goToToday} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}>Today</button>
+                        <button
+                            type="button"
+                            style={{ ...buttonStyle, backgroundColor: '#38A169', color: 'white', border: '1px solid #38A169' }}
+                            onClick={autoRoster}
+                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#2F855A'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#38A169'; }}
+                        >
+                            Auto Roster
+                        </button>
+                        <button type="button" style={buttonStyle} onClick={resetCalendar} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}>Reset Calendar</button>
+                        <button type="button" style={buttonStyle} onClick={saveAsPNG} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}>Save as PNG</button>
+                        <button
+                            type="button"
+                            style={{ ...buttonStyle, backgroundColor: '#3182CE', color: 'white', border: '1px solid #3182CE' }}
+                            onClick={generateShareLink}
+                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#2B6CB0'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#3182CE'; }}
+                        >
+                            Share Link
+                        </button>
+                    </div>
+                </>
+            )}
+
+            {activeTab === 'patchNotes' && (
+                <div style={{ padding: '0px 10px' }}>
+                    <h2 style={{ marginTop: 0, marginBottom: '20px', color: '#1A202C', fontSize: '1.5rem' }}>Application Patch Notes</h2>
+                    {patchNotes.map((patch, index) => (
+                        <div key={index} style={{ marginBottom: '25px', paddingBottom: '15px', borderBottom: '1px dashed #E2E8F0' }}>
+                            <h3 style={{ margin: '0 0 8px 0', color: '#2D3748', fontSize: '1.2rem' }}>
+                                Version {patch.version} <span style={{ fontSize: '0.85em', color: '#718096', fontWeight: 'normal' }}>({patch.date})</span>
+                            </h3>
+                            <ul style={{ listStyleType: 'disc', paddingLeft: '25px', margin: 0 }}>
+                                {patch.changes.map((change, i) => (
+                                    <li key={i} style={{ marginBottom: '5px', color: '#4A5568', lineHeight: '1.4' }}>{change}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    ))}
+                    <p style={{ fontSize: '0.9rem', color: '#718096', textAlign: 'center', marginTop: '30px' }}>End of Patch Notes.</p>
                 </div>
-              </div>
-
-              <Calendar
-                monthDays={calendarData[currentYear][currentMonth]}
-                moveTherapist={moveTherapist}
-                removeTherapist={removeTherapist}
-                todayDate={todayDate}
-                blockedDaysForYear={currentBlockedDays}
-              />
-            </div>
-
-            <div style={{ marginTop: '30px', display: 'flex', gap: '12px', flexWrap: 'wrap', borderTop: '1px solid #E2E8F0', paddingTop: '20px' }}>
-              <button type="button" style={buttonStyle} onClick={goToToday} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}>Today</button>
-              <button
-                type="button"
-                style={{ ...buttonStyle, backgroundColor: '#38A169', color: 'white', border: '1px solid #38A169' }}
-                onClick={autoRoster}
-                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#2F855A'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#38A169'; }}
-              >
-                Auto Roster
-              </button>
-              <button type="button" style={buttonStyle} onClick={resetCalendar} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}>Reset Calendar</button>
-              <button type="button" style={buttonStyle} onClick={saveAsPNG} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}>Save as PNG</button>
-              <button
-                type="button"
-                style={{ ...buttonStyle, backgroundColor: '#3182CE', color: 'white', border: '1px solid #3182CE' }}
-                onClick={generateShareLink}
-                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#2B6CB0'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#3182CE'; }}
-              >
-                Share Link
-              </button>
-            </div>
+            )}
           </div>
         </div>
       </div>
