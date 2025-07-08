@@ -303,7 +303,7 @@ const Calendar = ({ monthDays, moveTherapist, removeTherapist, todayDate, blocke
             backgroundColor: '#F7FAFC',
             borderRadius: '6px',
             minHeight: '160px',
-          }} />
+            }} />
         ))}
         {monthDays.map((day) => {
           const isToday = todayDate && day.date.toDateString() === todayDate.toDateString();
@@ -330,6 +330,8 @@ const App = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   // New state to manage active tab
   const [activeTab, setActiveTab] = useState('calendar'); // 'calendar' or 'patchNotes'
+  // State for current date and time to display live clock and capture in PNG
+  const [liveDateTime, setLiveDateTime] = useState('');
 
   const [calendarData, setCalendarData] = useState(() => ({
     2025: getCalendarForYear(2025),
@@ -459,6 +461,27 @@ const App = () => {
       setCurrentMonth(0);
     }
   }, [currentYear, actualCurrentYear, actualCurrentMonthIndex, actualCurrentDay]);
+
+  // Effect hook to update live date and time every second
+  useEffect(() => {
+    const updateDateTime = () => {
+      const now = new Date();
+      setLiveDateTime(now.toLocaleString('en-SG', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false // Use 24-hour format
+      }));
+    };
+
+    updateDateTime(); // Set initial value
+    const intervalId = setInterval(updateDateTime, 1000); // Update every second
+
+    return () => clearInterval(intervalId); // Cleanup on component unmount
+  }, []);
 
   // Effect hook to parse URL for shared data on initial load
   useEffect(() => {
@@ -845,6 +868,9 @@ const App = () => {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
                             <h2 style={{ color: '#1A202C', margin: 0, fontSize: '1.5rem' }}>
                                 {calendarData[currentYear]?.[currentMonth]?.[0]?.date.toLocaleString("default", { month: "long" })} {currentYear}
+                                <span style={{ fontSize: '0.8em', color: '#666', marginLeft: '15px' }}>
+                                    (Generated: {liveDateTime})
+                                </span>
                             </h2>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                 <select
