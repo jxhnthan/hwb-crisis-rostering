@@ -377,13 +377,12 @@ const App = () => {
         "Added 'Share Link' functionality to save and load calendar state via URL.",
         "Implemented LZString compression for significantly shorter shareable URLs.",
         "Included timestamp in shared data for unique link generation.",
-        "Updated 'Reset Calendar' button to also reset WFH settings to their initial state.",
         "Introduced a 'Patch Notes' tab to view application updates."
       ]
     },
     {
       version: "1.0.0",
-      date: "July 7, 2025",
+      date: "Feb 1, 2025",
       changes: [
         "Initial release of the Therapist Roster application.",
         "Drag-and-drop therapist assignment to calendar days.",
