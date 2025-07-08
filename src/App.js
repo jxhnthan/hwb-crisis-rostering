@@ -23,20 +23,20 @@ const blockedDays2025 = [
 
 // Blocked days for 2026 (public holidays for Singapore, including observed days)
 const blockedDays2026 = [
-  "2026-01-01",   // New Year’s Day (Thursday)
-  "2026-02-17",   // Chinese New Year (Tuesday)
-  "2026-02-18",   // Chinese New Year (Wednesday)
-  "2026-03-21",   // Hari Raya Puasa (Saturday)
-  "2026-04-03",   // Good Friday (Friday)
-  "2026-05-01",   // Labour Day (Friday)
-  "2026-05-27",   // Hari Raya Haji (Wednesday)
-  "2026-05-31",   // Vesak Day (Sunday)
-  "2026-06-01",   // Vesak Day (Observed - Monday, since May 31 is a Sunday)
-  "2026-08-09",   // National Day (Sunday)
-  "2026-08-10",   // National Day (Observed - Monday, since Aug 9 is a Sunday)
-  "2026-11-08",   // Deepavali (Sunday)
-  "2026-11-09",   // Deepavali (Observed - Monday, since Nov 8 is a Sunday)
-  "2026-12-25"    // Christmas Day (Friday)
+  "2026-01-01",    // New Year’s Day (Thursday)
+  "2026-02-17",    // Chinese New Year (Tuesday)
+  "2026-02-18",    // Chinese New Year (Wednesday)
+  "2026-03-21",    // Hari Raya Puasa (Saturday)
+  "2026-04-03",    // Good Friday (Friday)
+  "2026-05-01",    // Labour Day (Friday)
+  "2026-05-27",    // Hari Raya Haji (Wednesday)
+  "2026-05-31",    // Vesak Day (Sunday)
+  "2026-06-01",    // Vesak Day (Observed - Monday, since May 31 is a Sunday)
+  "2026-08-09",    // National Day (Sunday)
+  "2026-08-10",    // National Day (Observed - Monday, since Aug 9 is a Sunday)
+  "2026-11-08",    // Deepavali (Sunday)
+  "2026-11-09",    // Deepavali (Observed - Monday, since Nov 8 is a Sunday)
+  "2026-12-25"     // Christmas Day (Friday)
 ];
 
 
@@ -68,7 +68,6 @@ const getCalendarForYear = (year) => {
   }
   return calendar;
 };
-
 
 // Therapist Component
 // This component remains largely the same as it's concerned with dragging individual therapists
@@ -159,7 +158,7 @@ const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked }
   }
   if (isToday) {
     backgroundColor = '#E6FFFA'; // Light teal for today
-    dayNumberColor = '#2C7A7B';    // Stronger teal for today's number
+    dayNumberColor = '#2C7A7B';    // Stronger teal for today's number
   }
 
   // Style for when a therapist is being dragged over a droppable day
@@ -346,6 +345,52 @@ const Calendar = ({ monthDays, moveTherapist, removeTherapist, todayDate, blocke
   );
 };
 
+// --- Utility Functions for Shareable Link ---
+
+// Simple compression/decompression for URL.
+// In a real app, you might use a library like lz-string for better compression.
+const compressData = (data) => {
+  // We only need to store the assigned therapists for each day, not the full date object
+  // and the WFH settings.
+  const serializedCalendar = {};
+  for (const year in data.calendarData) {
+    serializedCalendar[year] = data.calendarData[year].map(month =>
+      month.map(day => ({
+        dayKey: day.dayKey,
+        therapists: day.therapists
+      }))
+    );
+  }
+  return JSON.stringify({
+    calendar: serializedCalendar,
+    wfh: data.workingFromHome
+  });
+};
+
+const decompressData = (compressedString) => {
+  try {
+    const parsed = JSON.parse(compressedString);
+    const deserializedCalendar = {};
+    for (const year in parsed.calendar) {
+      deserializedCalendar[year] = parsed.calendar[year].map(month =>
+        month.map(day => ({
+          // Recreate the Date object for each day
+          date: new Date(day.dayKey.split('-')[0], parseInt(day.dayKey.split('-')[1]) - 1, day.dayKey.split('-')[2]),
+          dayKey: day.dayKey,
+          therapists: day.therapists || [] // Ensure therapists array exists
+        }))
+      );
+    }
+    return {
+      calendarData: deserializedCalendar,
+      workingFromHome: parsed.wfh || {},
+    };
+  } catch (e) {
+    console.error("Failed to decompress data:", e);
+    return null;
+  }
+};
+
 
 // Main App Component
 const App = () => {
@@ -355,7 +400,6 @@ const App = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
 
   // State to hold calendar data for all years you want to support.
-  // Using a function for useState initialization to prevent re-running getCalendarForYear on every render.
   const [calendarData, setCalendarData] = useState(() => ({
     2025: getCalendarForYear(2025),
     2026: getCalendarForYear(2026),
@@ -364,7 +408,6 @@ const App = () => {
   const [todayDate, setTodayDate] = useState(null); // State to highlight the current day
   const [autoRosterTriggered, setAutoRosterTriggered] = useState(false);
 
-  // Working From Home data - no change needed for year switching logic
   const [workingFromHome, setWorkingFromHome] = useState(
     {
       "Dominic Yeo": { Monday: false, Tuesday: true, Wednesday: true, Thursday: true, Friday: false },
@@ -413,6 +456,26 @@ const App = () => {
       setCurrentMonth(0);
     }
   }, [currentYear, actualCurrentYear, actualCurrentMonthIndex, actualCurrentDay]); // Dependencies for this effect
+
+  // --- NEW: Effect hook to parse URL for shared data on initial load ---
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sharedData = params.get('data');
+
+    if (sharedData) {
+      const decodedData = decodeURIComponent(sharedData);
+      const decompressed = decompressData(decodedData);
+
+      if (decompressed) {
+        setCalendarData(decompressed.calendarData);
+        setWorkingFromHome(decompressed.workingFromHome);
+        // After loading, navigate to the first assigned month if any assignments exist
+        // or stay at the current month/year.
+        // For simplicity, we'll just log that it's loaded.
+        console.log("Calendar and WFH data loaded from shared link!");
+      }
+    }
+  }, []); // Run only once on component mount
 
   // --- Event Handlers and Logic ---
 
@@ -480,10 +543,25 @@ const App = () => {
     // Reset only the currently selected year's calendar to its initial empty state
     setCalendarData((prevCalendarData) => ({
       ...prevCalendarData,
-      [currentYear]: getCalendarForYear(currentYear), // Regenerate a fresh calendar for the current year
+      2025: getCalendarForYear(2025), // Regenerate a fresh calendar for 2025
+      2026: getCalendarForYear(2026), // Regenerate a fresh calendar for 2026
     }));
+    // Reset WFH to initial state as well
+    setWorkingFromHome({
+        "Dominic Yeo": { Monday: false, Tuesday: true, Wednesday: true, Thursday: true, Friday: false },
+        "Kirsty Png": { Monday: false, Tuesday: false, Wednesday: true, Thursday: false, Friday: false },
+        "Soon Jiaying": { Monday: false, Tuesday: false, Wednesday: false, Thursday: false, Friday: true },
+        "Andrew Lim": { Monday: false, Tuesday: false, Wednesday: false, Thursday: false, Friday: true },
+        "Janice Leong": { Monday: false, Tuesday: false, Wednesday: true, Thursday: false, Friday: false },
+        "Oliver Tan": { Monday: false, Tuesday: true, Wednesday: false, Thursday: false, Friday: false },
+        "Claudia Ahl": { Monday: false, Tuesday: false, Wednesday: false, Thursday: true, Friday: false },
+        "Seanna Neo": { Monday: false, Tuesday: true, Wednesday: false, Thursday: false, Friday: false },
+        "Xiao Hui": { Monday: false, Tuesday: false, Wednesday: false, Thursday: true, Friday: false },
+        "Tika Zainal": { Monday: false, Tuesday: true, Wednesday: true, Thursday: true, Friday: false },
+      });
     setAutoRosterTriggered(false); // Reset auto-roster flag
   };
+
 
   const saveAsPNG = () => {
     const calendarContainer = document.getElementById("calendar-container-content");
@@ -507,6 +585,26 @@ const App = () => {
     }).catch((error) => {
       console.error("Error generating PNG:", error);
     });
+  };
+
+  // --- NEW: Function to generate sharable link ---
+  const generateShareLink = () => {
+    const dataToShare = {
+      calendarData: calendarData,
+      workingFromHome: workingFromHome
+    };
+    const compressed = compressData(dataToShare);
+    const encodedData = encodeURIComponent(compressed);
+    const shareableUrl = `${window.location.origin}${window.location.pathname}?data=${encodedData}`;
+
+    navigator.clipboard.writeText(shareableUrl)
+      .then(() => {
+        alert("Shareable link copied to clipboard!");
+      })
+      .catch((err) => {
+        console.error("Failed to copy link: ", err);
+        alert("Failed to copy link to clipboard. You can copy it manually from the console.");
+      });
   };
 
   const autoRoster = () => {
@@ -654,7 +752,7 @@ const App = () => {
           display: 'flex',
           gap: '30px', // Space between sidebar and calendar
           maxWidth: '1800px', // Max width for large screens
-          margin: '0 auto',    // Center content
+          margin: '0 auto',    // Center content
         }}>
 
           {/* 3. Sidebar Area */}
@@ -814,6 +912,16 @@ const App = () => {
               </button>
               <button type="button" style={buttonStyle} onClick={resetCalendar} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}>Reset Calendar</button>
               <button type="button" style={buttonStyle} onClick={saveAsPNG} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}>Save as PNG</button>
+              {/* NEW: Shareable Link Button */}
+              <button
+                type="button"
+                style={{ ...buttonStyle, backgroundColor: '#3182CE', color: 'white', border: '1px solid #3182CE' }}
+                onClick={generateShareLink}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#2B6CB0'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#3182CE'; }}
+              >
+                Share Link
+              </button>
             </div>
           </div>
         </div>
