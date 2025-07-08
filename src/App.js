@@ -371,7 +371,7 @@ const App = () => {
   // Patch Notes Content Data
   const patchNotes = [
     {
-      version: "1.0.1",
+      version: "1.1",
       date: "July 8, 2025", // Current Date
       changes: [
         "Added 'Share Link' functionality to save and load calendar state via URL.",
