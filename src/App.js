@@ -379,7 +379,7 @@ const App = () => {
         "Added 'Share Link' functionality to save and load calendar state via URL.",
         "Implemented LZString compression for significantly shorter shareable URLs.",
         "Included timestamp in shared data for unique link generation.",
-        "Introduced a 'Patch Notes' tab to view application updates."
+        "Introduced a 'Patch Notes' tab to view application updates.",
         "Added shrinking feature for weekends when saving roster as PNG image."
       ]
     },
