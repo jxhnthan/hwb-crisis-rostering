@@ -381,7 +381,7 @@ const App = () => {
       ]
     },
     {
-      version: "1.0.0",
+      version: "1.0",
       date: "Feb 1, 2025",
       changes: [
         "Initial release of SWEE Therapist Roster application.",
