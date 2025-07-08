@@ -3,6 +3,7 @@ import { useDrag, useDrop } from 'react-dnd';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import html2canvas from 'html2canvas';
+import LZString from 'lz-string'; // Import lz-string
 
 // Define therapist names
 const therapists = [
@@ -365,8 +366,9 @@ const App = () => {
   const actualCurrentMonthIndex = actualCurrentDate.getMonth();
   const actualCurrentYear = actualCurrentDate.getFullYear();
 
-  // Helper functions for shareable link
+  // Helper functions for shareable link using lz-string
   const compressData = (data) => {
+    // We only need to store dayKey and therapists. Date objects are recreated.
     const serializedCalendar = {};
     for (const year in data.calendarData) {
       serializedCalendar[year] = data.calendarData[year].map(month =>
@@ -376,20 +378,31 @@ const App = () => {
         }))
       );
     }
-    return JSON.stringify({
-      timestamp: Date.now(), // Added timestamp for uniqueness
+    // Convert the entire payload to a JSON string first
+    const payload = JSON.stringify({
+      timestamp: Date.now(), // Added timestamp for uniqueness per generated link
       calendar: serializedCalendar,
       wfh: data.workingFromHome
     });
+    // Then compress and encode for URL
+    return LZString.compressToEncodedURIComponent(payload);
   };
 
   const decompressData = (compressedString) => {
     try {
-      const parsed = JSON.parse(compressedString);
+      // Decompress and decode from URL safe string
+      const decompressedPayload = LZString.decompressFromEncodedURIComponent(compressedString);
+      if (!decompressedPayload) {
+          console.error("Decompression resulted in null. Data might be corrupted or empty.");
+          return null;
+      }
+      const parsed = JSON.parse(decompressedPayload);
+
       const deserializedCalendar = {};
       for (const year in parsed.calendar) {
         deserializedCalendar[year] = parsed.calendar[year].map(month =>
           month.map(day => {
+            // Recreate the Date object from dayKey
             const [yearStr, monthStr, dayStr] = day.dayKey.split('-');
             const dateObj = new Date(parseInt(yearStr), parseInt(monthStr) - 1, parseInt(dayStr));
             return {
@@ -428,16 +441,16 @@ const App = () => {
     const sharedData = params.get('data');
 
     if (sharedData) {
-      const decodedData = decodeURIComponent(sharedData);
-      const decompressed = decompressData(decodedData);
+      const decompressed = decompressData(sharedData);
 
       if (decompressed) {
         setCalendarData(decompressed.calendarData);
         setWorkingFromHome(decompressed.workingFromHome);
         console.log(`Calendar and WFH data loaded from shared link (Timestamp: ${decompressed.timestamp || 'N/A'})!`);
         // Remove the 'data' parameter from the URL after loading
-        // This prevents the data from being re-loaded if the user refreshes the page,
-        // effectively resetting to the default initial state unless you use localStorage.
+        // This makes the URL clean, but also means that a page refresh
+        // will revert to the default state unless you add state persistence
+        // to localStorage or similar.
         window.history.replaceState({}, document.title, window.location.pathname);
       }
     }
@@ -541,9 +554,8 @@ const App = () => {
       calendarData: calendarData,
       workingFromHome: workingFromHome
     };
-    const compressed = compressData(dataToShare); // This now includes the timestamp
-    const encodedData = encodeURIComponent(compressed);
-    const shareableUrl = `${window.location.origin}${window.location.pathname}?data=${encodedData}`;
+    const compressedEncodedData = compressData(dataToShare); // This uses lz-string
+    const shareableUrl = `${window.location.origin}${window.location.pathname}?data=${compressedEncodedData}`;
 
     navigator.clipboard.writeText(shareableUrl)
       .then(() => {
