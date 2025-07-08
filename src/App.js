@@ -384,7 +384,7 @@ const App = () => {
       version: "1.0.0",
       date: "Feb 1, 2025",
       changes: [
-        "Initial release of the Therapist Roster application.",
+        "Initial release of SWEE Therapist Roster application.",
         "Drag-and-drop therapist assignment to calendar days.",
         "Support for 2025 and 2026 calendar years with pre-defined blocked holidays.",
         "Automatic detection and styling for weekends and blocked holidays.",
