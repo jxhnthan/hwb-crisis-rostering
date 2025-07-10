@@ -16,7 +16,7 @@ const therapistGroups = [
     ]
   },
   {
-    role: "Case Manager",
+    role: "Care Manager",
     therapists: [
       "Tika Zainal", "Dominic Yeo"
     ]
