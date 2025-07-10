@@ -432,12 +432,56 @@ const App = () => {
 
   const currentBlockedDays = currentYear === 2025 ? blockedDays2025 : blockedDays2026;
 
+  // --- Start of Tracker Section Calculations ---
+  // Calculate total possible workdays in the current month (for 'full' assignment context)
+  let totalAvailableWorkdaysInMonth = 0;
+  if (calendarData[currentYear] && calendarData[currentYear][currentMonth]) {
+    calendarData[currentYear][currentMonth].forEach(day => {
+      const isWeekend = day.date.getDay() === 0 || day.date.getDay() === 6;
+      const isBlocked = currentBlockedDays.includes(day.dayKey);
+      if (!isWeekend && !isBlocked) {
+        totalAvailableWorkdaysInMonth++;
+      }
+    });
+  }
+
   const assignmentCounts = therapists.reduce((acc, therapist) => {
     acc[therapist] = calendarData[currentYear]?.[currentMonth]?.filter((day) =>
       day.therapists.includes(therapist)
     ).length || 0;
     return acc;
   }, {});
+
+  const totalAssignedShiftsOverall = Object.values(assignmentCounts).reduce((sum, count) => sum + count, 0);
+  const averageShiftsPerTherapist = therapists.length > 0
+    ? (totalAssignedShiftsOverall / therapists.length).toFixed(1)
+    : 0;
+
+  // Define color thresholds relative to the average
+  const getColorForAssignmentCount = (count) => {
+      if (averageShiftsPerTherapist === 0 || therapists.length === 0) return '#A0AEC0'; // Grey if no assignments or no therapists
+
+      // Define thresholds
+      const avg = parseFloat(averageShiftsPerTherapist); // Ensure numeric comparison
+      if (count < avg * 0.75) return '#68D391'; // Green: Significantly below average
+      if (count > avg * 1.25) return '#FC8181'; // Red: Significantly above average
+      if (count > avg) return '#F6AD55'; // Orange: Slightly above average
+      return '#4FD1C5'; // Teal: Around or slightly below average
+  };
+
+  // Sort therapists for display in the tracker
+  const sortedTherapists = [...therapists].sort((a, b) => {
+      const countA = assignmentCounts[a];
+      const countB = assignmentCounts[b];
+      // Primary sort: by assignment count (ascending)
+      if (countA !== countB) {
+          return countA - countB;
+      }
+      // Secondary sort: alphabetically by name if counts are equal
+      return a.localeCompare(b);
+  });
+  // --- End of Tracker Section Calculations ---
+
 
   const actualCurrentDate = new Date();
   const actualCurrentDay = actualCurrentDate.getDate();
@@ -789,7 +833,7 @@ const App = () => {
     padding: '10px 18px',
     background: '#FFFFFF',
     color: '#4A5568',
-    border: '1px solid #CBD5E0', // Corrected: Removed stray single quote
+    border: '1px solid #CBD5E0',
     borderRadius: '6px',
     cursor: 'pointer',
     fontWeight: '500',
@@ -979,25 +1023,62 @@ const App = () => {
                 Therapist Assignment Tracker
               </h3>
               <div style={{
+                fontSize: '0.9rem',
+                color: '#718096',
+                marginBottom: '15px',
+                textAlign: 'center'
+              }}>
+                Monthly Average: <strong>{averageShiftsPerTherapist}</strong> shifts per therapist
+              </div>
+              <div style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
                 gap: '12px',
               }}>
-                {Object.entries(assignmentCounts).map(([therapist, count]) => (
-                  <div
-                    key={therapist}
-                    style={{
-                      padding: '12px',
-                      backgroundColor: '#E6FFFA',
-                      color: '#234E52',
-                      borderRadius: '6px',
-                      fontSize: '0.9rem'
-                    }}
-                  >
-                    <strong style={{ display: 'block', marginBottom: '4px' }}>{therapist}</strong>
-                    <span>Assigned: {count}</span>
-                  </div>
-                ))}
+                {sortedTherapists.map((therapist) => {
+                  const count = assignmentCounts[therapist];
+                  const assignmentColor = getColorForAssignmentCount(count);
+                  const therapistWfhDays = Object.entries(workingFromHome[therapist] || {})
+                    .filter(([, isWfh]) => isWfh)
+                    .map(([day]) => day.substring(0, 3)); // e.g., "Mon", "Tue"
+                  return (
+                    <div
+                      key={therapist}
+                      style={{
+                        padding: '12px',
+                        backgroundColor: '#F7FAFC', // Lighter background for tracker cards
+                        color: '#234E52',
+                        borderRadius: '6px',
+                        fontSize: '0.9rem',
+                        border: `1px solid ${assignmentColor}`, // Border color based on assignment status
+                        boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start', // Align text to start
+                        gap: '6px',
+                        position: 'relative'
+                      }}
+                    >
+                      <strong style={{ display: 'block' }}>{therapist}</strong>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span>Assigned: {count}</span>
+                        <span style={{
+                          width: '10px',
+                          height: '10px',
+                          borderRadius: '50%',
+                          backgroundColor: assignmentColor,
+                          display: 'inline-block',
+                          flexShrink: 0,
+                        }} title={`Assignment Status: ${count} shifts`}></span>
+                      </div>
+                      {therapistWfhDays.length > 0 && (
+                          <div style={{ fontSize: '0.8rem', color: '#718096' }}>
+                              WFH: {therapistWfhDays.join(', ')}
+                          </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -1144,19 +1225,6 @@ const App = () => {
 };
 
 export default App;
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
