@@ -581,6 +581,7 @@ const App = () => {
       setTodayDate(new Date(actualCurrentYear, actualCurrentMonthIndex, actualCurrentDay));
     } else {
       alert("Cannot go to 'Today' in a different year. Please switch to the current year first.");
+    (function () { /* ... */ })();
     }
   };
 
@@ -789,7 +790,7 @@ const App = () => {
     padding: '10px 18px',
     background: '#FFFFFF',
     color: '#4A5568',
-    border: '1px solid #CBD5E0',
+    border: '1px solid '#CBD5E0',
     borderRadius: '6px',
     cursor: 'pointer',
     fontWeight: '500',
@@ -872,7 +873,7 @@ const App = () => {
               </h2>
               <div style={{ paddingTop: '10px' }}>
                 {therapistGroups.map((group) => (
-                  <div key={group.role} style={{ marginBottom: '10px' }}> {/* Reduced margin-bottom here */}
+                  <div key={group.role} style={{ marginBottom: '8px' }}> {/* Reduced margin-bottom */}
                     <button
                       onClick={() => toggleCollapse(group.role)}
                       style={{
@@ -898,6 +899,8 @@ const App = () => {
                         transform: collapsedRoles[group.role] ? 'rotate(-90deg)' : 'rotate(0deg)',
                         transition: 'transform 0.2s ease-in-out', // Smooth arrow rotation
                         display: 'inline-block', // Essential for transform to work
+                        fontSize: '0.8em', // Make arrow slightly smaller than text
+                        lineHeight: '1', // Ensure vertical centering of arrow
                         color: '#718096' // Softer arrow color
                       }}>
                         ▶
@@ -905,7 +908,13 @@ const App = () => {
                       {group.role}
                     </button>
                     {!collapsedRoles[group.role] && ( // Conditionally render content
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '10px' }}>
+                      <div style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '8px',
+                        marginTop: '8px', // Reduced margin top for tighter spacing
+                        paddingLeft: '20px', // Indent therapists for visual hierarchy
+                      }}>
                         {group.therapists.map((name) => (
                           <Therapist key={name} name={name} />
                         ))}
