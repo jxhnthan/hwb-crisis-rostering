@@ -495,7 +495,7 @@ const patchNotes = [
     date: "July 10, 2025", // Updated to current date
     changes: [
       "Enhanced Therapist Section Design: Overhauled the left sidebar for a cleaner, more minimalistic aesthetic.",
-      "Collapsible Therapist Roles: Therapists are now grouped by job role (WBSP, Case Manager) into collapsible sections, improving organization and navigation.",
+      "Collapsible Therapist Roles: Therapists are now grouped by job role (WBSP, Case Manager) into collapsible sections, improving organisation and navigation.",
       "Sleeker Collapsible Indicators: Replaced previous arrow indicators with clear '+' and '-' symbols for a more modern and intuitive expand/collapse experience.",
       "Improved Therapist Tracker Visuals: The 'Therapist Assignment Tracker' now features visual color-coded indicators, displays the monthly average workload, and includes WFH day summaries for better insights.",
       "Refined Card Alignment and Spacing: General spacing and alignment across therapist cards and sections have been fine-tuned for a polished look."
