@@ -811,6 +811,18 @@ const App = () => {
   const tableCellStyle = { border: '1px solid #E2E8F0', padding: '8px', textAlign: 'center' };
   const tableHeaderStyle = { ...tableCellStyle, backgroundColor: '#F7FAFC', fontWeight: '600', color: '#4A5568' };
 
+  // Common style for section headings (h2 and h3)
+  const sectionHeadingStyle = {
+    marginTop: 0,
+    marginBottom: '15px',
+    color: '#2D3748',
+    fontSize: '1.2rem', // Made consistent with "Therapists" heading
+    fontWeight: '600',
+    paddingBottom: '10px',
+    borderBottom: '1px solid #E2E8F0'
+  };
+
+
   return (
     <DndProvider backend={HTML5Backend}>
       <div style={{
@@ -833,15 +845,7 @@ const App = () => {
             gap: '20px'
           }}>
             <div style={cardStyle}>
-              <h2 style={{
-                marginTop: 0,
-                marginBottom: '15px',
-                color: '#2D3748', // Softer color than #1A202C
-                fontSize: '1.2rem', // Slightly smaller font size
-                fontWeight: '600', // Still bold, but not too heavy
-                paddingBottom: '10px', // Space for the border
-                borderBottom: '1px solid #E2E8F0' // Subtle separator
-              }}>
+              <h2 style={sectionHeadingStyle}> {/* Applied consistent style */}
                 Therapists
               </h2>
               {/* Flex wrap container for therapists with a defined gap */}
@@ -853,7 +857,9 @@ const App = () => {
             </div>
 
             <div style={cardStyle}>
-              <h3 style={{ marginTop: 0, marginBottom: '15px', color: '#2D3748', fontSize: '1.1rem' }}>Set Working from Home Days</h3>
+              <h3 style={sectionHeadingStyle}> {/* Applied consistent style */}
+                Set Working from Home Days
+              </h3>
               <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: '0.9rem' }}>
                 <thead>
                   <tr>
@@ -892,7 +898,9 @@ const App = () => {
             </div>
 
             <div style={cardStyle}>
-              <h3 style={{ marginTop: 0, marginBottom: '15px', color: '#2D3748', fontSize: '1.1rem' }}>Therapist Assignment Tracker</h3>
+              <h3 style={sectionHeadingStyle}> {/* Applied consistent style */}
+                Therapist Assignment Tracker
+              </h3>
               <div style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
