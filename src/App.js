@@ -844,30 +844,6 @@ const App = () => {
     borderBottom: '1px solid #E2E8F0'
   };
 
-  // Toggle collapse state for a role
-  const toggleCollapse = (role) => {
-    setCollapsedRoles(prev => ({
-      ...prev,
-      [role]: !prev[role]
-    }));
-  };
-
-  const roleButtonBaseStyle = {
-    background: 'none',
-    border: 'none',
-    padding: '8px 0',
-    fontSize: '1.1rem', // Slightly smaller than main header, but prominent
-    fontWeight: '600',
-    color: '#4A5568', // Consistent text color
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    width: '100%',
-    textAlign: 'left',
-    outline: 'none',
-    transition: 'color 0.2s ease',
-  };
-
 
   return (
     <DndProvider backend={HTML5Backend}>
@@ -894,18 +870,35 @@ const App = () => {
               <h2 style={sectionHeadingStyle}> {/* Applied consistent style */}
                 Therapists
               </h2>
-              <div style={{ paddingTop: '10px' }}> {/* Removed flex-wrap from here, it goes into role sections */}
+              <div style={{ paddingTop: '10px' }}>
                 {therapistGroups.map((group) => (
-                  <div key={group.role} style={{ marginBottom: '15px' }}>
+                  <div key={group.role} style={{ marginBottom: '10px' }}> {/* Reduced margin-bottom here */}
                     <button
                       onClick={() => toggleCollapse(group.role)}
-                      style={roleButtonBaseStyle}
+                      style={{
+                        background: 'transparent', // Make background transparent
+                        border: 'none', // Remove border
+                        padding: '6px 0', // Reduced padding
+                        fontSize: '1.1rem',
+                        fontWeight: '600',
+                        color: '#4A5568',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        width: '100%',
+                        textAlign: 'left',
+                        outline: 'none',
+                        transition: 'color 0.2s ease, background-color 0.2s ease', // Smooth transition
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F7FAFC'} // Subtle background on hover
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'} // Reset on leave
                     >
                       <span style={{
                         marginRight: '8px',
                         transform: collapsedRoles[group.role] ? 'rotate(-90deg)' : 'rotate(0deg)',
-                        transition: 'transform 0.2s',
-                        display: 'inline-block' // Ensure transform works
+                        transition: 'transform 0.2s ease-in-out', // Smooth arrow rotation
+                        display: 'inline-block', // Essential for transform to work
+                        color: '#718096' // Softer arrow color
                       }}>
                         ▶
                       </span>
@@ -1134,8 +1127,6 @@ const App = () => {
 };
 
 export default App;
-
-
 
 
 
