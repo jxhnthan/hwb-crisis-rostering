@@ -5,12 +5,26 @@ import { HTML5Backend } from 'react-dnd-html5-backend';
 import html2canvas from 'html2canvas';
 import LZString from 'lz-string'; // Import lz-string for URL compression
 
-// Define therapist names
-const therapists = [
-  "Dominic Yeo", "Kirsty Png", "Soon Jiaying",
-  "Andrew Lim", "Janice Leong", "Oliver Tan",
-  "Claudia Ahl", "Seanna Neo", "Xiao Hui", "Tika Zainal"
+// Define therapist job roles and their members
+const therapistGroups = [
+  {
+    role: "WBSP",
+    therapists: [
+      "Soon Jiaying", "Kirsty Png", "Andrew Lim",
+      "Janice Leong", "Oliver Tan", "Claudia Ahl",
+      "Seanna Neo", "Xiao Hui"
+    ]
+  },
+  {
+    role: "Case Manager",
+    therapists: [
+      "Tika Zainal", "Dominic Yeo"
+    ]
+  }
 ];
+
+// Derive the flat list of all therapists from the grouped data
+const therapists = therapistGroups.flatMap(group => group.therapists);
 
 // Define a color palette for therapists
 const therapistColors = [
@@ -384,6 +398,14 @@ const App = () => {
   const [activeTab, setActiveTab] = useState('calendar'); // 'calendar' or 'patchNotes'
   // State for current date and time to display live clock and capture in PNG
   const [liveDateTime, setLiveDateTime] = useState('');
+
+  // Initialize collapsed state for each role to be expanded (false means not collapsed)
+  const initialCollapsedRolesState = therapistGroups.reduce((acc, group) => {
+    acc[group.role] = false;
+    return acc;
+  }, {});
+  const [collapsedRoles, setCollapsedRoles] = useState(initialCollapsedRolesState);
+
 
   const [calendarData, setCalendarData] = useState(() => ({
     2025: getCalendarForYear(2025),
@@ -816,10 +838,34 @@ const App = () => {
     marginTop: 0,
     marginBottom: '15px',
     color: '#2D3748',
-    fontSize: '1.2rem', // Made consistent with "Therapists" heading
+    fontSize: '1.2rem', // Consistent font size
     fontWeight: '600',
     paddingBottom: '10px',
     borderBottom: '1px solid #E2E8F0'
+  };
+
+  // Toggle collapse state for a role
+  const toggleCollapse = (role) => {
+    setCollapsedRoles(prev => ({
+      ...prev,
+      [role]: !prev[role]
+    }));
+  };
+
+  const roleButtonBaseStyle = {
+    background: 'none',
+    border: 'none',
+    padding: '8px 0',
+    fontSize: '1.1rem', // Slightly smaller than main header, but prominent
+    fontWeight: '600',
+    color: '#4A5568', // Consistent text color
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    width: '100%',
+    textAlign: 'left',
+    outline: 'none',
+    transition: 'color 0.2s ease',
   };
 
 
@@ -848,10 +894,31 @@ const App = () => {
               <h2 style={sectionHeadingStyle}> {/* Applied consistent style */}
                 Therapists
               </h2>
-              {/* Flex wrap container for therapists with a defined gap */}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', paddingTop: '10px' }}>
-                {therapists.map((name, index) => (
-                  <Therapist key={index} name={name} />
+              <div style={{ paddingTop: '10px' }}> {/* Removed flex-wrap from here, it goes into role sections */}
+                {therapistGroups.map((group) => (
+                  <div key={group.role} style={{ marginBottom: '15px' }}>
+                    <button
+                      onClick={() => toggleCollapse(group.role)}
+                      style={roleButtonBaseStyle}
+                    >
+                      <span style={{
+                        marginRight: '8px',
+                        transform: collapsedRoles[group.role] ? 'rotate(-90deg)' : 'rotate(0deg)',
+                        transition: 'transform 0.2s',
+                        display: 'inline-block' // Ensure transform works
+                      }}>
+                        ▶
+                      </span>
+                      {group.role}
+                    </button>
+                    {!collapsedRoles[group.role] && ( // Conditionally render content
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '10px' }}>
+                        {group.therapists.map((name) => (
+                          <Therapist key={name} name={name} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             </div>
