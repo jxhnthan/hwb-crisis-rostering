@@ -581,7 +581,6 @@ const App = () => {
       setTodayDate(new Date(actualCurrentYear, actualCurrentMonthIndex, actualCurrentDay));
     } else {
       alert("Cannot go to 'Today' in a different year. Please switch to the current year first.");
-    (function () { /* ... */ })();
     }
   };
 
@@ -790,7 +789,7 @@ const App = () => {
     padding: '10px 18px',
     background: '#FFFFFF',
     color: '#4A5568',
-    border: '1px solid '#CBD5E0',
+    border: '1px solid #CBD5E0',
     borderRadius: '6px',
     cursor: 'pointer',
     fontWeight: '500',
@@ -1136,7 +1135,6 @@ const App = () => {
 };
 
 export default App;
-
 
 
 
