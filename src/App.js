@@ -12,6 +12,31 @@ const therapists = [
   "Claudia Ahl", "Seanna Neo", "Xiao Hui", "Tika Zainal"
 ];
 
+// Define a color palette for therapists
+const therapistColors = [
+  '#FF5733', // Red-Orange
+  '#33FF57', // Green
+  '#3357FF', // Blue
+  '#FF33A8', // Pink
+  '#A833FF', // Purple
+  '#33FFF2', // Cyan
+  '#FFC733', // Gold
+  '#33A8FF', // Light Blue
+  '#FF8C33', // Orange
+  '#8C33FF'  // Violet
+];
+
+// Helper function to get a consistent color for each therapist
+const getTherapistColor = (name) => {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash % therapistColors.length);
+  return therapistColors[index];
+};
+
+
 // Blocked Days for Each Year
 const blockedDays2025 = [
   "2025-01-01", "2025-01-29", "2025-01-30",
@@ -22,20 +47,20 @@ const blockedDays2025 = [
 ];
 
 const blockedDays2026 = [
-  "2026-01-01",     // New Year’s Day (Thursday)
-  "2026-02-17",     // Chinese New Year (Tuesday)
-  "2026-02-18",     // Chinese New Year (Wednesday)
-  "2026-03-21",     // Hari Raya Puasa (Saturday)
-  "2026-04-03",     // Good Friday (Friday)
-  "2026-05-01",     // Labour Day (Friday)
-  "2026-05-27",     // Hari Raya Haji (Wednesday)
-  "2026-05-31",     // Vesak Day (Sunday)
-  "2026-06-01",     // Vesak Day (Observed - Monday, since May 31 is a Sunday)
-  "2026-08-09",     // National Day (Sunday)
-  "2026-08-10",     // National Day (Observed - Monday, since Aug 9 is a Sunday)
-  "2026-11-08",     // Deepavali (Sunday)
-  "2026-11-09",     // Deepavali (Observed - Monday, since Nov 8 is a Sunday)
-  "2026-12-25"      // Christmas Day (Friday)
+  "2026-01-01",       // New Year’s Day (Thursday)
+  "2026-02-17",       // Chinese New Year (Tuesday)
+  "2026-02-18",       // Chinese New Year (Wednesday)
+  "2026-03-21",       // Hari Raya Puasa (Saturday)
+  "2026-04-03",       // Good Friday (Friday)
+  "2026-05-01",       // Labour Day (Friday)
+  "2026-05-27",       // Hari Raya Haji (Wednesday)
+  "2026-05-31",       // Vesak Day (Sunday)
+  "2026-06-01",       // Vesak Day (Observed - Monday, since May 31 is a Sunday)
+  "2026-08-09",       // National Day (Sunday)
+  "2026-08-10",       // National Day (Observed - Monday, since Aug 9 is a Sunday)
+  "2026-11-08",       // Deepavali (Sunday)
+  "2026-11-09",       // Deepavali (Observed - Monday, since Nov 8 is a Sunday)
+  "2026-12-25"        // Christmas Day (Friday)
 ];
 
 // Helper function to get the number of days in a month for a given year
@@ -77,6 +102,8 @@ const Therapist = ({ name }) => {
     .join('')
     .toUpperCase();
 
+  const color = getTherapistColor(name); // Get dynamic color
+
   return (
     <div
       ref={drag}
@@ -92,14 +119,20 @@ const Therapist = ({ name }) => {
         color: '#00796B',
         boxShadow: '0 2px 6px rgba(0, 0, 0, 0.08)',
         cursor: 'grab',
-        transition: 'background 0.2s, transform 0.1s',
+        transition: 'background 0.2s, transform 0.1s', // Add transform to transition
       }}
-      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#B2EBF2')}
-      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#E0F7FA')}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.backgroundColor = '#B2EBF2';
+        e.currentTarget.style.transform = 'translateY(-2px)'; // Lift on hover
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.backgroundColor = '#E0F7FA';
+        e.currentTarget.style.transform = 'translateY(0)'; // Reset on leave
+      }}
     >
       <div
         style={{
-          backgroundColor: '#00796B',
+          backgroundColor: color, // Use dynamic color
           color: 'white',
           borderRadius: '50%',
           width: '28px',
@@ -108,6 +141,7 @@ const Therapist = ({ name }) => {
           alignItems: 'center',
           justifyContent: 'center',
           fontSize: '0.8rem',
+          flexShrink: 0, // Prevent shrinking
         }}
       >
         {initials}
@@ -140,6 +174,8 @@ const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked }
 
   let backgroundColor = '#FFFFFF';
   let dayNumberColor = '#4A5568';
+  let borderColor = '#E2E8F0';
+  let boxShadow = '0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03)';
 
   if (finalBlockedStatus) {
     backgroundColor = '#F7FAFC';
@@ -148,10 +184,13 @@ const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked }
   if (isToday) {
     backgroundColor = '#E6FFFA';
     dayNumberColor = '#2C7A7B';
+    borderColor = '#4FD1C5';
   }
 
   if (isOver && canDrop) {
-    backgroundColor = '#B2F5EA';
+    backgroundColor = '#B2F5EA'; // A lighter green-blue when droppable
+    borderColor = '#3182CE'; // Blue border for active drop target
+    boxShadow = '0 0 0 3px rgba(49, 130, 206, 0.4)'; // Glow for active drop target
   }
 
   return (
@@ -163,12 +202,12 @@ const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked }
         position: 'relative',
         backgroundColor: backgroundColor,
         borderRadius: '6px',
-        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03)',
+        boxShadow: boxShadow, // Apply dynamic shadow
         display: 'flex',
         flexDirection: 'column',
         gap: '10px',
-        border: `1px solid ${isToday ? '#4FD1C5' : '#E2E8F0'}`,
-        transition: 'background-color 0.2s ease-in-out',
+        border: `1px solid ${borderColor}`, // Apply dynamic border color
+        transition: 'background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out', // Include shadow in transition
       }}
     >
       <strong
@@ -192,6 +231,8 @@ const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked }
             .map((word) => word[0])
             .join('')
             .toUpperCase();
+          const therapistBlockColor = getTherapistColor(therapist); // Get dynamic color for assigned block
+
           return (
             <div
               key={idx}
@@ -200,7 +241,7 @@ const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked }
                 alignItems: 'center',
                 gap: '12px',
                 padding: '8px 12px',
-                backgroundColor: '#E6FFFA',
+                backgroundColor: '#E6FFFA', // Light green background
                 color: '#234E52',
                 borderRadius: '8px',
                 justifyContent: 'space-between',
@@ -210,7 +251,7 @@ const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked }
             >
               <div
                 style={{
-                  backgroundColor: '#00796B',
+                  backgroundColor: therapistBlockColor, // Use dynamic color
                   color: 'white',
                   borderRadius: '50%',
                   width: '40px',
@@ -237,7 +278,10 @@ const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked }
                   padding: '2px',
                   lineHeight: '1',
                   fontSize: '1.2rem',
+                  transition: 'color 0.2s',
                 }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = '#C53030')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = '#E53E3E')}
                 title={`Remove ${therapist}`}
               >
                 ×
@@ -782,9 +826,12 @@ const App = () => {
           }}>
             <div style={cardStyle}>
               <h2 style={{ marginTop: 0, marginBottom: '15px', color: '#1A202C', fontSize: '1.25rem' }}>Therapists</h2>
-              {therapists.map((name, index) => (
-                <Therapist key={index} name={name} />
-              ))}
+              {/* Flex wrap container for therapists */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                {therapists.map((name, index) => (
+                  <Therapist key={index} name={name} />
+                ))}
+              </div>
             </div>
 
             <div style={cardStyle}>
