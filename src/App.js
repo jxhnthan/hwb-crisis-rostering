@@ -488,34 +488,45 @@ const App = () => {
   const actualCurrentMonthIndex = actualCurrentDate.getMonth();
   const actualCurrentYear = actualCurrentDate.getFullYear();
 
-  // Patch Notes Content Data
-  const patchNotes = [
-    {
-      version: "1.1",
-      date: "July 8, 2025",
-      changes: [
-        "Added 'Share Link' functionality to save and load calendar state via URL.",
-        "Implemented LZString compression for significantly shorter shareable URLs.",
-        "Included timestamp in shared data for unique link generation.",
-        "Introduced a 'Patch Notes' tab to view application updates.",
-        "Added shrinking feature for weekends when saving roster as PNG image."
-      ]
-    },
-    {
-      version: "1.0",
-      date: "Feb 1, 2025",
-      changes: [
-        "Initial release of SWEE Therapist Roster application.",
-        "Drag-and-drop therapist assignment to calendar days.",
-        "Support for 2025 and 2026 calendar years with pre-defined blocked holidays.",
-        "Automatic detection and styling for weekends and blocked holidays.",
-        "Configurable Working From Home (WFH) settings for each therapist.",
-        "Intelligent 'Auto Roster' feature for balanced therapist assignments.",
-        "Real-time therapist assignment tracker.",
-        "Ability to save the current calendar view as a PNG image."
-      ]
-    }
-  ];
+// Patch Notes Content Data
+const patchNotes = [
+  {
+    version: "1.2",
+    date: "July 10, 2025", // Updated to current date
+    changes: [
+      "Enhanced Therapist Section Design: Overhauled the left sidebar for a cleaner, more minimalistic aesthetic.",
+      "Collapsible Therapist Roles: Therapists are now grouped by job role (WBSP, Case Manager) into collapsible sections, improving organization and navigation.",
+      "Sleeker Collapsible Indicators: Replaced previous arrow indicators with clear '+' and '-' symbols for a more modern and intuitive expand/collapse experience.",
+      "Improved Therapist Tracker Visuals: The 'Therapist Assignment Tracker' now features visual color-coded indicators, displays the monthly average workload, and includes WFH day summaries for better insights.",
+      "Refined Card Alignment and Spacing: General spacing and alignment across therapist cards and sections have been fine-tuned for a polished look."
+    ]
+  },
+  {
+    version: "1.1",
+    date: "July 8, 2025",
+    changes: [
+      "Added 'Share Link' functionality to save and load calendar state via URL.",
+      "Implemented LZString compression for significantly shorter shareable URLs.",
+      "Included timestamp in shared data for unique link generation.",
+      "Introduced a 'Patch Notes' tab to view application updates.",
+      "Added shrinking feature for weekends when saving roster as PNG image."
+    ]
+  },
+  {
+    version: "1.0",
+    date: "Feb 1, 2025",
+    changes: [
+      "Initial release of SWEE Therapist Roster application.",
+      "Drag-and-drop therapist assignment to calendar days.",
+      "Support for 2025 and 2026 calendar years with pre-defined blocked holidays.",
+      "Automatic detection and styling for weekends and blocked holidays.",
+      "Configurable Working From Home (WFH) settings for each therapist.",
+      "Intelligent 'Auto Roster' feature for balanced therapist assignments.",
+      "Real-time therapist assignment tracker.",
+      "Ability to save the current calendar view as a PNG image."
+    ]
+  }
+];
 
   // Helper functions for shareable link using lz-string
   const compressData = (data) => {
