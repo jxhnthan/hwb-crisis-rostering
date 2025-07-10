@@ -111,23 +111,28 @@ const Therapist = ({ name }) => {
         display: 'flex',
         alignItems: 'center',
         gap: '10px',
-        padding: '10px 14px',
-        margin: '6px 0',
-        backgroundColor: '#E0F7FA',
-        borderRadius: '999px',
+        padding: '8px 12px', // Slightly less padding
+        margin: '4px 0', // Reduced margin
+        backgroundColor: 'transparent', // Default to transparent for a cleaner look
+        borderRadius: '8px', // Slightly less rounded corners
         fontWeight: '500',
-        color: '#00796B',
-        boxShadow: '0 2px 6px rgba(0, 0, 0, 0.08)',
+        color: '#4A5568', // Darker text for better contrast on lighter background
+        border: '1px solid transparent', // Default transparent border
+        boxShadow: 'none', // No default shadow
         cursor: 'grab',
-        transition: 'background 0.2s, transform 0.1s', // Add transform to transition
+        transition: 'background 0.2s, transform 0.1s, border-color 0.2s, box-shadow 0.2s', // Add border-color and box-shadow to transition
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.backgroundColor = '#B2EBF2';
+        e.currentTarget.style.backgroundColor = '#F0F4F8'; // Light background on hover
         e.currentTarget.style.transform = 'translateY(-2px)'; // Lift on hover
+        e.currentTarget.style.borderColor = '#CBD5E0'; // Light border on hover
+        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.08)'; // Subtle shadow on hover
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.backgroundColor = '#E0F7FA';
+        e.currentTarget.style.backgroundColor = 'transparent';
         e.currentTarget.style.transform = 'translateY(0)'; // Reset on leave
+        e.currentTarget.style.borderColor = 'transparent';
+        e.currentTarget.style.boxShadow = 'none';
       }}
     >
       <div
@@ -135,13 +140,13 @@ const Therapist = ({ name }) => {
           backgroundColor: color, // Use dynamic color
           color: 'white',
           borderRadius: '50%',
-          width: '28px',
-          height: '28px',
+          width: '32px', // Slightly larger initials circle
+          height: '32px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: '0.8rem',
-          flexShrink: 0, // Prevent shrinking
+          fontSize: '0.9rem', // Slightly larger font size for initials
+          flexShrink: 0,
         }}
       >
         {initials}
@@ -825,9 +830,19 @@ const App = () => {
             gap: '20px'
           }}>
             <div style={cardStyle}>
-              <h2 style={{ marginTop: 0, marginBottom: '15px', color: '#1A202C', fontSize: '1.25rem' }}>Therapists</h2>
+              <h2 style={{
+                marginTop: 0,
+                marginBottom: '15px',
+                color: '#2D3748', // Softer color than #1A202C
+                fontSize: '1.2rem', // Slightly smaller font size
+                fontWeight: '600', // Still bold, but not too heavy
+                paddingBottom: '10px', // Space for the border
+                borderBottom: '1px solid #E2E8F0' // Subtle separator
+              }}>
+                Therapists
+              </h2>
               {/* Flex wrap container for therapists */}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', paddingTop: '10px' }}>
                 {therapists.map((name, index) => (
                   <Therapist key={index} name={name} />
                 ))}
