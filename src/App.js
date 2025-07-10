@@ -789,7 +789,7 @@ const App = () => {
     padding: '10px 18px',
     background: '#FFFFFF',
     color: '#4A5568',
-    border: '1px solid #CBD5E0',
+    border: '1px solid #CBD5E0', // Corrected: Removed stray single quote
     borderRadius: '6px',
     cursor: 'pointer',
     fontWeight: '500',
@@ -852,22 +852,6 @@ const App = () => {
     }));
   };
 
-  const roleButtonBaseStyle = {
-    background: 'none',
-    border: 'none',
-    padding: '8px 0',
-    fontSize: '1.1rem', // Slightly smaller than main header, but prominent
-    fontWeight: '600',
-    color: '#4A5568', // Consistent text color
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    width: '100%',
-    textAlign: 'left',
-    outline: 'none',
-    transition: 'color 0.2s ease',
-  };
-
 
   return (
     <DndProvider backend={HTML5Backend}>
@@ -894,25 +878,51 @@ const App = () => {
               <h2 style={sectionHeadingStyle}> {/* Applied consistent style */}
                 Therapists
               </h2>
-              <div style={{ paddingTop: '10px' }}> {/* Removed flex-wrap from here, it goes into role sections */}
+              <div style={{ paddingTop: '10px' }}>
                 {therapistGroups.map((group) => (
-                  <div key={group.role} style={{ marginBottom: '15px' }}>
+                  <div key={group.role} style={{ marginBottom: '8px' }}> {/* Reduced margin-bottom */}
                     <button
                       onClick={() => toggleCollapse(group.role)}
-                      style={roleButtonBaseStyle}
+                      style={{
+                        background: 'transparent', // Make background transparent
+                        border: 'none', // Remove border
+                        padding: '6px 0', // Reduced padding
+                        fontSize: '1.1rem',
+                        fontWeight: '600',
+                        color: '#4A5568',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        width: '100%',
+                        textAlign: 'left',
+                        outline: 'none',
+                        transition: 'color 0.2s ease, background-color 0.2s ease', // Smooth transition
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F7FAFC'} // Subtle background on hover
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'} // Reset on leave
                     >
                       <span style={{
                         marginRight: '8px',
-                        transform: collapsedRoles[group.role] ? 'rotate(-90deg)' : 'rotate(0deg)',
-                        transition: 'transform 0.2s',
-                        display: 'inline-block' // Ensure transform works
+                        color: '#718096',
+                        fontSize: '1.1em', // Larger font size for +/- to match text height
+                        fontWeight: 'bold', // Make +/- bold
+                        lineHeight: '1',
+                        width: '1em', // Give it a fixed width to prevent text reflow
+                        display: 'inline-block', // Ensure width works
+                        textAlign: 'center', // Center +/- in its space
                       }}>
-                        ▶
+                        {collapsedRoles[group.role] ? '+' : '-'}
                       </span>
                       {group.role}
                     </button>
                     {!collapsedRoles[group.role] && ( // Conditionally render content
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '10px' }}>
+                      <div style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '8px',
+                        marginTop: '8px', // Reduced margin top for tighter spacing
+                        paddingLeft: '20px', // Indent therapists for visual hierarchy
+                      }}>
                         {group.therapists.map((name) => (
                           <Therapist key={name} name={name} />
                         ))}
