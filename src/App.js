@@ -789,7 +789,6 @@ const App = () => {
     padding: '10px 18px',
     background: '#FFFFFF',
     color: '#4A5568',
-    // FIXED: Removed the stray single quote here
     border: '1px solid #CBD5E0',
     borderRadius: '6px',
     cursor: 'pointer',
@@ -845,6 +844,30 @@ const App = () => {
     borderBottom: '1px solid #E2E8F0'
   };
 
+  // Toggle collapse state for a role
+  const toggleCollapse = (role) => {
+    setCollapsedRoles(prev => ({
+      ...prev,
+      [role]: !prev[role]
+    }));
+  };
+
+  const roleButtonBaseStyle = {
+    background: 'none',
+    border: 'none',
+    padding: '8px 0',
+    fontSize: '1.1rem', // Slightly smaller than main header, but prominent
+    fontWeight: '600',
+    color: '#4A5568', // Consistent text color
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    width: '100%',
+    textAlign: 'left',
+    outline: 'none',
+    transition: 'color 0.2s ease',
+  };
+
 
   return (
     <DndProvider backend={HTML5Backend}>
@@ -871,50 +894,25 @@ const App = () => {
               <h2 style={sectionHeadingStyle}> {/* Applied consistent style */}
                 Therapists
               </h2>
-              <div style={{ paddingTop: '10px' }}>
+              <div style={{ paddingTop: '10px' }}> {/* Removed flex-wrap from here, it goes into role sections */}
                 {therapistGroups.map((group) => (
-                  <div key={group.role} style={{ marginBottom: '8px' }}> {/* Reduced margin-bottom */}
+                  <div key={group.role} style={{ marginBottom: '15px' }}>
                     <button
                       onClick={() => toggleCollapse(group.role)}
-                      style={{
-                        background: 'transparent', // Make background transparent
-                        border: 'none', // Remove border
-                        padding: '6px 0', // Reduced padding
-                        fontSize: '1.1rem',
-                        fontWeight: '600',
-                        color: '#4A5568',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        width: '100%',
-                        textAlign: 'left',
-                        outline: 'none',
-                        transition: 'color 0.2s ease, background-color 0.2s ease', // Smooth transition
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F7FAFC'} // Subtle background on hover
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'} // Reset on leave
+                      style={roleButtonBaseStyle}
                     >
                       <span style={{
                         marginRight: '8px',
                         transform: collapsedRoles[group.role] ? 'rotate(-90deg)' : 'rotate(0deg)',
-                        transition: 'transform 0.2s ease-in-out', // Smooth arrow rotation
-                        display: 'inline-block', // Essential for transform to work
-                        fontSize: '0.8em', // Make arrow slightly smaller than text
-                        lineHeight: '1', // Ensure vertical centering of arrow
-                        color: '#718096' // Softer arrow color
+                        transition: 'transform 0.2s',
+                        display: 'inline-block' // Ensure transform works
                       }}>
                         ▶
                       </span>
                       {group.role}
                     </button>
                     {!collapsedRoles[group.role] && ( // Conditionally render content
-                      <div style={{
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        gap: '8px',
-                        marginTop: '8px', // Reduced margin top for tighter spacing
-                        paddingLeft: '20px', // Indent therapists for visual hierarchy
-                      }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '10px' }}>
                         {group.therapists.map((name) => (
                           <Therapist key={name} name={name} />
                         ))}
@@ -1136,7 +1134,6 @@ const App = () => {
 };
 
 export default App;
-
 
 
 
