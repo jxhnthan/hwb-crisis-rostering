@@ -110,9 +110,12 @@ const Therapist = ({ name }) => {
       style={{
         display: 'flex',
         alignItems: 'center',
+        justifyContent: 'flex-start', // Align content to the left
         gap: '10px',
-        padding: '8px 12px', // Slightly less padding
-        margin: '4px 0', // Reduced margin
+        padding: '8px 10px', // Adjusted horizontal padding
+        margin: '0', // Remove margin, spacing controlled by parent's gap
+        width: '196px', // Fixed width for consistent columns
+        boxSizing: 'border-box', // Include padding and border in the width
         backgroundColor: 'transparent', // Default to transparent for a cleaner look
         borderRadius: '8px', // Slightly less rounded corners
         fontWeight: '500',
@@ -423,7 +426,7 @@ const App = () => {
   const patchNotes = [
     {
       version: "1.1",
-      date: "July 8, 2025", // Current Date
+      date: "July 8, 2025",
       changes: [
         "Added 'Share Link' functionality to save and load calendar state via URL.",
         "Implemented LZString compression for significantly shorter shareable URLs.",
@@ -824,7 +827,7 @@ const App = () => {
         }}>
 
           <div style={{
-            flex: '0 0 400px',
+            flex: '0 0 400px', // Fixed width for the sidebar
             display: 'flex',
             flexDirection: 'column',
             gap: '20px'
@@ -841,7 +844,7 @@ const App = () => {
               }}>
                 Therapists
               </h2>
-              {/* Flex wrap container for therapists */}
+              {/* Flex wrap container for therapists with a defined gap */}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', paddingTop: '10px' }}>
                 {therapists.map((name, index) => (
                   <Therapist key={index} name={name} />
