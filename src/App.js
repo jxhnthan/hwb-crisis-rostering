@@ -789,6 +789,7 @@ const App = () => {
     padding: '10px 18px',
     background: '#FFFFFF',
     color: '#4A5568',
+    // FIXED: Removed the stray single quote here
     border: '1px solid #CBD5E0',
     borderRadius: '6px',
     cursor: 'pointer',
@@ -1135,7 +1136,6 @@ const App = () => {
 };
 
 export default App;
-
 
 
 
