@@ -1,11 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import html2canvas from 'html2canvas';
-import LZString from 'lz-string'; // Import lz-string for URL compression
+import LZString from 'lz-string';
 
-// Define therapist job roles and their members
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+// --- Utility Data ---
 const therapistGroups = [
   {
     role: "WBSP",
@@ -23,24 +26,13 @@ const therapistGroups = [
   }
 ];
 
-// Derive the flat list of all therapists from the grouped data
 const therapists = therapistGroups.flatMap(group => group.therapists);
 
-// Define a color palette for therapists
 const therapistColors = [
-  '#FF5733', // Red-Orange
-  '#33FF57', // Green
-  '#3357FF', // Blue
-  '#FF33A8', // Pink
-  '#A833FF', // Purple
-  '#33FFF2', // Cyan
-  '#FFC733', // Gold
-  '#33A8FF', // Light Blue
-  '#FF8C33', // Orange
-  '#8C33FF'  // Violet
+  '#FF5733', '#33FF57', '#3357FF', '#FF33A8', '#A833FF',
+  '#33FFF2', '#FFC733', '#33A8FF', '#FF8C33', '#8C33FF'
 ];
 
-// Helper function to get a consistent color for each therapist
 const getTherapistColor = (name) => {
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
@@ -50,8 +42,6 @@ const getTherapistColor = (name) => {
   return therapistColors[index];
 };
 
-
-// Blocked Days for Each Year
 const blockedDays2025 = [
   "2025-01-01", "2025-01-29", "2025-01-30",
   "2025-03-31", "2025-04-18", "2025-05-01",
@@ -61,28 +51,17 @@ const blockedDays2025 = [
 ];
 
 const blockedDays2026 = [
-  "2026-01-01",       // New Year’s Day (Thursday)
-  "2026-02-17",       // Chinese New Year (Tuesday)
-  "2026-02-18",       // Chinese New Year (Wednesday)
-  "2026-03-21",       // Hari Raya Puasa (Saturday)
-  "2026-04-03",       // Good Friday (Friday)
-  "2026-05-01",       // Labour Day (Friday)
-  "2026-05-27",       // Hari Raya Haji (Wednesday)
-  "2026-05-31",       // Vesak Day (Sunday)
-  "2026-06-01",       // Vesak Day (Observed - Monday, since May 31 is a Sunday)
-  "2026-08-09",       // National Day (Sunday)
-  "2026-08-10",       // National Day (Observed - Monday, since Aug 9 is a Sunday)
-  "2026-11-08",       // Deepavali (Sunday)
-  "2026-11-09",       // Deepavali (Observed - Monday, since Nov 8 is a Sunday)
-  "2026-12-25"        // Christmas Day (Friday)
+  "2026-01-01", "2026-02-17", "2026-02-18",
+  "2026-03-21", "2026-04-03", "2026-05-01",
+  "2026-05-27", "2026-05-31", "2026-06-01",
+  "2026-08-09", "2026-08-10", "2026-11-08",
+  "2026-11-09", "2026-12-25"
 ];
 
-// Helper function to get the number of days in a month for a given year
 const getDaysInMonth = (year, monthIndex) => {
   return new Date(year, monthIndex + 1, 0).getDate();
 };
 
-// Helper function to get the dates for a given year with unique keys
 const getCalendarForYear = (year) => {
   const calendar = [];
   for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
@@ -92,407 +71,17 @@ const getCalendarForYear = (year) => {
       const formattedMonth = String(monthIndex + 1).padStart(2, '0');
       const formattedDay = String(dayIndex + 1).padStart(2, '0');
       const dayKey = `${year}-${formattedMonth}-${formattedDay}`;
-      return {
-        date,
-        dayKey,
-        therapists: []
-      };
+      return { date, dayKey, therapists: [] };
     });
     calendar.push(monthDays);
   }
   return calendar;
 };
 
-// Therapist Component
-const Therapist = ({ name }) => {
-  const [, drag] = useDrag(() => ({
-    type: 'THERAPIST',
-    item: { name },
-  }));
-
-  const initials = name
-    .split(' ')
-    .map((word) => word[0])
-    .join('')
-    .toUpperCase();
-
-  const color = getTherapistColor(name); // Get dynamic color
-
-  return (
-    <div
-      ref={drag}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'flex-start', // Align content to the left
-        gap: '10px',
-        padding: '8px 10px', // Adjusted horizontal padding
-        margin: '0', // Remove margin, spacing controlled by parent's gap
-        width: '196px', // Fixed width for consistent columns
-        boxSizing: 'border-box', // Include padding and border in the width
-        backgroundColor: 'transparent', // Default to transparent for a cleaner look
-        borderRadius: '8px', // Slightly less rounded corners
-        fontWeight: '500',
-        color: '#4A5568', // Darker text for better contrast on lighter background
-        border: '1px solid transparent', // Default transparent border
-        boxShadow: 'none', // No default shadow
-        cursor: 'grab',
-        transition: 'background 0.2s, transform 0.1s, border-color 0.2s, box-shadow 0.2s', // Add border-color and box-shadow to transition
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.backgroundColor = '#F0F4F8'; // Light background on hover
-        e.currentTarget.style.transform = 'translateY(-2px)'; // Lift on hover
-        e.currentTarget.style.borderColor = '#CBD5E0'; // Light border on hover
-        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.08)'; // Subtle shadow on hover
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.backgroundColor = 'transparent';
-        e.currentTarget.style.transform = 'translateY(0)'; // Reset on leave
-        e.currentTarget.style.borderColor = 'transparent';
-        e.currentTarget.style.boxShadow = 'none';
-      }}
-    >
-      <div
-        style={{
-          backgroundColor: color, // Use dynamic color
-          color: 'white',
-          borderRadius: '50%',
-          width: '32px', // Slightly larger initials circle
-          height: '32px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '0.9rem', // Slightly larger font size for initials
-          flexShrink: 0,
-        }}
-      >
-        {initials}
-      </div>
-      <span>{name}</span>
-    </div>
-  );
-};
-
-// Calendar Day (Drop Zone) Component
-const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked }) => {
-  const isWeekend = day.date.getDay() === 0 || day.date.getDay() === 6;
-  const finalBlockedStatus = isBlocked || isWeekend;
-
-  const [{ isOver, canDrop }, drop] = useDrop(() => ({
-    accept: 'THERAPIST',
-    drop: (item) => {
-      if (!finalBlockedStatus) {
-        moveTherapist(item.name, day.dayKey);
-      }
-    },
-    canDrop: () => !finalBlockedStatus,
-    collect: (monitor) => ({
-      isOver: !!monitor.isOver(),
-      canDrop: !!monitor.canDrop(),
-    }),
-  }));
-
-  const dayNumber = day.date.getDate();
-
-  let backgroundColor = '#FFFFFF';
-  let dayNumberColor = '#4A5568';
-  let borderColor = '#E2E8F0';
-  let boxShadow = '0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03)';
-
-  if (finalBlockedStatus) {
-    backgroundColor = '#F7FAFC';
-    dayNumberColor = '#A0AEC0';
-  }
-  if (isToday) {
-    backgroundColor = '#E6FFFA';
-    dayNumberColor = '#2C7A7B';
-    borderColor = '#4FD1C5';
-  }
-
-  if (isOver && canDrop) {
-    backgroundColor = '#B2F5EA'; // A lighter green-blue when droppable
-    borderColor = '#3182CE'; // Blue border for active drop target
-    boxShadow = '0 0 0 3px rgba(49, 130, 206, 0.4)'; // Glow for active drop target
-  }
-
-  return (
-    <div
-      ref={drop}
-      style={{
-        padding: '12px',
-        minHeight: '160px',
-        position: 'relative',
-        backgroundColor: backgroundColor,
-        borderRadius: '6px',
-        boxShadow: boxShadow, // Apply dynamic shadow
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '10px',
-        border: `1px solid ${borderColor}`, // Apply dynamic border color
-        transition: 'background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out', // Include shadow in transition
-      }}
-    >
-      <strong
-        style={{
-          alignSelf: 'flex-end',
-          fontSize: '0.9rem',
-          color: dayNumberColor,
-          backgroundColor: isToday ? '#B2F5EA' : 'transparent',
-          borderRadius: isToday ? '50%' : '0',
-          padding: isToday ? '3px 8px' : '0',
-          lineHeight: '1',
-        }}
-      >
-        {dayNumber}
-      </strong>
-
-      {day.therapists.length > 0 ? (
-        day.therapists.map((therapist, idx) => {
-          const initials = therapist
-            .split(' ')
-            .map((word) => word[0])
-            .join('')
-            .toUpperCase();
-          const therapistBlockColor = getTherapistColor(therapist); // Get dynamic color for assigned block
-
-          return (
-            <div
-              key={idx}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                padding: '8px 12px',
-                backgroundColor: '#E6FFFA', // Light green background
-                color: '#234E52',
-                borderRadius: '8px',
-                justifyContent: 'space-between',
-                fontWeight: '600',
-                boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-              }}
-            >
-              <div
-                style={{
-                  backgroundColor: therapistBlockColor, // Use dynamic color
-                  color: 'white',
-                  borderRadius: '50%',
-                  width: '40px',
-                  height: '40px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '1.1rem',
-                  flexShrink: 0,
-                }}
-              >
-                {initials}
-              </div>
-              <span style={{ fontSize: '1.05rem', flexGrow: 1 }}>{therapist}</span>
-              <button
-                onClick={() => removeTherapist(therapist, day.dayKey)}
-                style={{
-                  marginLeft: '10px',
-                  color: '#E53E3E',
-                  cursor: 'pointer',
-                  background: 'transparent',
-                  border: 'none',
-                  fontWeight: 'bold',
-                  padding: '2px',
-                  lineHeight: '1',
-                  fontSize: '1.2rem',
-                  transition: 'color 0.2s',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = '#C53030')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = '#E53E3E')}
-                title={`Remove ${therapist}`}
-              >
-                ×
-              </button>
-            </div>
-          );
-        })
-      ) : (
-        !finalBlockedStatus && (
-          <div style={{
-            fontSize: '0.85rem',
-            color: '#A0AEC0',
-            textAlign: 'center',
-            marginTop: 'auto',
-            marginBottom: 'auto'
-          }}>
-            Empty
-          </div>
-        )
-      )}
-      {finalBlockedStatus && !isToday && (
-        <div style={{
-          fontSize: '0.8rem',
-          color: '#718096',
-          textAlign: 'center',
-          marginTop: 'auto',
-          marginBottom: 'auto'
-        }}>
-          {isWeekend && !isBlocked ? 'Weekend' : 'Blocked'}
-        </div>
-      )}
-    </div>
-  );
-};
-
-// Calendar Grid Component
-const Calendar = ({ monthDays, moveTherapist, removeTherapist, todayDate, blockedDaysForYear }) => {
-  const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const firstDayOfMonth = monthDays.length > 0 ? monthDays[0].date.getDay() : 0;
-
-  return (
-    <>
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(7, 1fr)',
-        gap: '8px',
-        marginTop: '20px',
-        marginBottom: '8px',
-        fontWeight: '600',
-        color: '#4A5568',
-        textAlign: 'center',
-      }}>
-        {daysOfWeek.map(dayName => <div key={dayName}>{dayName}</div>)}
-      </div>
-
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(7, 1fr)',
-        gap: '8px',
-      }}>
-        {Array.from({ length: firstDayOfMonth }).map((_, index) => (
-          <div key={`empty-${index}`} style={{
-            backgroundColor: '#F7FAFC',
-            borderRadius: '6px',
-            minHeight: '160px',
-            }} />
-        ))}
-        {monthDays.map((day) => {
-          const isToday = todayDate && day.date.toDateString() === todayDate.toDateString();
-          const isBlocked = blockedDaysForYear.includes(day.dayKey);
-          return (
-            <CalendarDay
-              key={day.dayKey}
-              day={day}
-              moveTherapist={moveTherapist}
-              removeTherapist={removeTherapist}
-              isToday={isToday}
-              isBlocked={isBlocked}
-            />
-          );
-        })}
-      </div>
-    </>
-  );
-};
-
-// Main App Component
-const App = () => {
-  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
-  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
-  // New state to manage active tab
-  const [activeTab, setActiveTab] = useState('calendar'); // 'calendar' or 'patchNotes'
-  // State for current date and time to display live clock and capture in PNG
-  const [liveDateTime, setLiveDateTime] = useState('');
-
-  // Initialize collapsed state for each role to be expanded (false means not collapsed)
-  const initialCollapsedRolesState = therapistGroups.reduce((acc, group) => {
-    acc[group.role] = false;
-    return acc;
-  }, {});
-  const [collapsedRoles, setCollapsedRoles] = useState(initialCollapsedRolesState);
-
-
-  const [calendarData, setCalendarData] = useState(() => ({
-    2025: getCalendarForYear(2025),
-    2026: getCalendarForYear(2026),
-  }));
-
-  const [todayDate, setTodayDate] = useState(null);
-  const [autoRosterTriggered, setAutoRosterTriggered] = useState(false);
-
-  const [workingFromHome, setWorkingFromHome] = useState(
-    {
-      "Dominic Yeo": { Monday: false, Tuesday: true, Wednesday: true, Thursday: true, Friday: false },
-      "Kirsty Png": { Monday: false, Tuesday: false, Wednesday: true, Thursday: false, Friday: false },
-      "Soon Jiaying": { Monday: false, Tuesday: false, Wednesday: false, Thursday: false, Friday: true },
-      "Andrew Lim": { Monday: false, Tuesday: false, Wednesday: false, Thursday: false, Friday: true },
-      "Janice Leong": { Monday: false, Tuesday: false, Wednesday: true, Thursday: false, Friday: false },
-      "Oliver Tan": { Monday: false, Tuesday: true, Wednesday: false, Thursday: false, Friday: false },
-      "Claudia Ahl": { Monday: false, Tuesday: false, Wednesday: false, Thursday: true, Friday: false },
-      "Seanna Neo": { Monday: false, Tuesday: true, Wednesday: false, Thursday: false, Friday: false },
-      "Xiao Hui": { Monday: false, Tuesday: false, Wednesday: false, Thursday: true, Friday: false },
-      "Tika Zainal": { Monday: false, Tuesday: true, Wednesday: true, Thursday: true, Friday: false },
-    }
-  );
-
-  const currentBlockedDays = currentYear === 2025 ? blockedDays2025 : blockedDays2026;
-
-  // --- Start of Tracker Section Calculations ---
-  // Calculate total possible workdays in the current month (for 'full' assignment context)
-  let totalAvailableWorkdaysInMonth = 0;
-  if (calendarData[currentYear] && calendarData[currentYear][currentMonth]) {
-    calendarData[currentYear][currentMonth].forEach(day => {
-      const isWeekend = day.date.getDay() === 0 || day.date.getDay() === 6;
-      const isBlocked = currentBlockedDays.includes(day.dayKey);
-      if (!isWeekend && !isBlocked) {
-        totalAvailableWorkdaysInMonth++;
-      }
-    });
-  }
-
-  const assignmentCounts = therapists.reduce((acc, therapist) => {
-    acc[therapist] = calendarData[currentYear]?.[currentMonth]?.filter((day) =>
-      day.therapists.includes(therapist)
-    ).length || 0;
-    return acc;
-  }, {});
-
-  const totalAssignedShiftsOverall = Object.values(assignmentCounts).reduce((sum, count) => sum + count, 0);
-  const averageShiftsPerTherapist = therapists.length > 0
-    ? (totalAssignedShiftsOverall / therapists.length).toFixed(1)
-    : 0;
-
-  // Define color thresholds relative to the average
-  const getColorForAssignmentCount = (count) => {
-      if (averageShiftsPerTherapist === 0 || therapists.length === 0) return '#A0AEC0'; // Grey if no assignments or no therapists
-
-      // Define thresholds
-      const avg = parseFloat(averageShiftsPerTherapist); // Ensure numeric comparison
-      if (count < avg * 0.75) return '#68D391'; // Green: Significantly below average
-      if (count > avg * 1.25) return '#FC8181'; // Red: Significantly above average
-      if (count > avg) return '#F6AD55'; // Orange: Slightly above average
-      return '#4FD1C5'; // Teal: Around or slightly below average
-  };
-
-  // Sort therapists for display in the tracker
-  const sortedTherapists = [...therapists].sort((a, b) => {
-      const countA = assignmentCounts[a];
-      const countB = assignmentCounts[b];
-      // Primary sort: by assignment count (ascending)
-      if (countA !== countB) {
-          return countA - countB;
-      }
-      // Secondary sort: alphabetically by name if counts are equal
-      return a.localeCompare(b);
-  });
-  // --- End of Tracker Section Calculations ---
-
-
-  const actualCurrentDate = new Date();
-  const actualCurrentDay = actualCurrentDate.getDate();
-  const actualCurrentMonthIndex = actualCurrentDate.getMonth();
-  const actualCurrentYear = actualCurrentDate.getFullYear();
-
-// Patch Notes Content Data
 const patchNotes = [
   {
     version: "1.2",
-    date: "July 10, 2025", // Updated to current date
+    date: "July 10, 2025",
     changes: [
       "Enhanced Therapist Section Design: Overhauled the left sidebar for a cleaner, more minimalistic aesthetic.",
       "Collapsible Therapist Roles: Therapists are now grouped by job role (WBSP, Case Manager) into collapsible sections, improving organisation and navigation.",
@@ -528,58 +117,641 @@ const patchNotes = [
   }
 ];
 
-  // Helper functions for shareable link using lz-string
-  const compressData = (data) => {
-    const serializedCalendar = {};
-    for (const year in data.calendarData) {
-      serializedCalendar[year] = data.calendarData[year].map(month =>
-        month.map(day => ({
-          dayKey: day.dayKey,
-          therapists: day.therapists
-        }))
-      );
-    }
-    const payload = JSON.stringify({
-      timestamp: Date.now(),
-      calendar: serializedCalendar,
-      wfh: data.workingFromHome
-    });
-    return LZString.compressToEncodedURIComponent(payload);
-  };
+// --- Styles ---
+const sectionHeadingStyle = {
+  marginTop: 0,
+  marginBottom: '15px',
+  color: '#2D3748',
+  fontSize: '1.2rem',
+  fontWeight: '600',
+  paddingBottom: '10px',
+  borderBottom: '1px solid #E2E8F0'
+};
 
-  const decompressData = (compressedString) => {
-    try {
-      const decompressedPayload = LZString.decompressFromEncodedURIComponent(compressedString);
-      if (!decompressedPayload) {
-          console.error("Decompression resulted in null. Data might be corrupted or empty.");
-          return null;
-      }
-      const parsed = JSON.parse(decompressedPayload);
+const cardStyle = {
+  backgroundColor: '#FFFFFF',
+  padding: '15px',
+  borderRadius: '8px',
+  boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+  marginBottom: '20px',
+};
 
-      const deserializedCalendar = {};
-      for (const year in parsed.calendar) {
-        deserializedCalendar[year] = parsed.calendar[year].map(month =>
-          month.map(day => {
-            const [yearStr, monthStr, dayStr] = day.dayKey.split('-');
-            const dateObj = new Date(parseInt(yearStr), parseInt(monthStr) - 1, parseInt(dayStr));
-            return {
-              date: dateObj,
-              dayKey: day.dayKey,
-              therapists: day.therapists || []
-            };
-          })
-        );
-      }
-      return {
-        calendarData: deserializedCalendar,
-        workingFromHome: parsed.wfh || {},
-        timestamp: parsed.timestamp
-      };
-    } catch (e) {
-      console.error("Failed to decompress data:", e);
+const tabButtonStyle = {
+  padding: '12px 20px',
+  background: 'none',
+  border: 'none',
+  cursor: 'pointer',
+  fontSize: '1.1rem',
+  fontWeight: '600',
+  transition: 'color 0.2s, border-bottom 0.2s',
+  flexGrow: 1,
+  textAlign: 'center',
+  outline: 'none',
+};
+
+const buttonStyle = {
+  padding: '10px 18px',
+  background: '#FFFFFF',
+  color: '#4A5568',
+  border: '1px solid #CBD5E0',
+  borderRadius: '6px',
+  cursor: 'pointer',
+  fontWeight: '500',
+  transition: 'background-color 0.2s, box-shadow 0.2s',
+  boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+};
+
+const tableCellStyle = { border: '1px solid #E2E8F0', padding: '8px', textAlign: 'center' };
+const tableHeaderStyle = { ...tableCellStyle, backgroundColor: '#F7FAFC', fontWeight: '600', color: '#4A5568' };
+
+// --- Helper Functions for Data Compression/Decompression ---
+const compressData = (data) => {
+  const serializedCalendar = {};
+  for (const year in data.calendarData) {
+    serializedCalendar[year] = data.calendarData[year].map(month =>
+      month.map(day => ({
+        dayKey: day.dayKey,
+        therapists: day.therapists
+      }))
+    );
+  }
+  const payload = JSON.stringify({
+    timestamp: Date.now(),
+    calendar: serializedCalendar,
+    wfh: data.workingFromHome
+  });
+  return LZString.compressToEncodedURIComponent(payload);
+};
+
+const decompressData = (compressedString) => {
+  try {
+    const decompressedPayload = LZString.decompressFromEncodedURIComponent(compressedString);
+    if (!decompressedPayload) {
+      console.error("Decompression resulted in null. Data might be corrupted or empty.");
       return null;
     }
-  };
+    const parsed = JSON.parse(decompressedPayload);
+
+    const deserializedCalendar = {};
+    for (const year in parsed.calendar) {
+      deserializedCalendar[year] = parsed.calendar[year].map(month =>
+        month.map(day => {
+          const [yearStr, monthStr, dayStr] = day.dayKey.split('-');
+          const dateObj = new Date(parseInt(yearStr), parseInt(monthStr) - 1, parseInt(dayStr));
+          return {
+            date: dateObj,
+            dayKey: day.dayKey,
+            therapists: day.therapists || []
+          };
+        })
+      );
+    }
+    return {
+      calendarData: deserializedCalendar,
+      workingFromHome: parsed.wfh || {},
+      timestamp: parsed.timestamp
+    };
+  } catch (e) {
+    console.error("Failed to decompress data:", e);
+    return null;
+  }
+};
+
+// --- Components ---
+
+const Therapist = React.memo(({ name }) => {
+  const [, drag] = useDrag(() => ({
+    type: 'THERAPIST',
+    item: { name },
+  }));
+
+  const initials = name.split(' ').map((word) => word[0]).join('').toUpperCase();
+  const color = getTherapistColor(name);
+
+  return (
+    <div
+      ref={drag}
+      style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'flex-start',
+        gap: '10px', padding: '8px 10px', margin: '0', width: '196px',
+        boxSizing: 'border-box', backgroundColor: 'transparent',
+        borderRadius: '8px', fontWeight: '500', color: '#4A5568',
+        border: '1px solid transparent', boxShadow: 'none', cursor: 'grab',
+        transition: 'background 0.2s, transform 0.1s, border-color 0.2s, box-shadow 0.2s',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.backgroundColor = '#F0F4F8';
+        e.currentTarget.style.transform = 'translateY(-2px)';
+        e.currentTarget.style.borderColor = '#CBD5E0';
+        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.08)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.backgroundColor = 'transparent';
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.borderColor = 'transparent';
+        e.currentTarget.style.boxShadow = 'none';
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: color, color: 'white', borderRadius: '50%',
+          width: '32px', height: '32px', display: 'flex',
+          alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', flexShrink: 0,
+        }}
+      >
+        {initials}
+      </div>
+      <span>{name}</span>
+    </div>
+  );
+});
+
+const CalendarDay = React.memo(({ day, moveTherapist, removeTherapist, isToday, isBlocked }) => {
+  const isWeekend = day.date.getDay() === 0 || day.date.getDay() === 6;
+  const finalBlockedStatus = isBlocked || isWeekend;
+
+  const [{ isOver, canDrop }, drop] = useDrop(() => ({
+    accept: 'THERAPIST',
+    drop: (item) => {
+      if (!finalBlockedStatus) {
+        moveTherapist(item.name, day.dayKey);
+      }
+    },
+    canDrop: () => !finalBlockedStatus,
+    collect: (monitor) => ({
+      isOver: !!monitor.isOver(),
+      canDrop: !!monitor.canDrop(),
+    }),
+  }));
+
+  const dayNumber = day.date.getDate();
+
+  let backgroundColor = '#FFFFFF';
+  let dayNumberColor = '#4A5568';
+  let borderColor = '#E2E8F0';
+  let boxShadow = '0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03)';
+
+  if (finalBlockedStatus) {
+    backgroundColor = '#F7FAFC';
+    dayNumberColor = '#A0AEC0';
+  }
+  if (isToday) {
+    backgroundColor = '#E6FFFA';
+    dayNumberColor = '#2C7A7B';
+    borderColor = '#4FD1C5';
+  }
+
+  if (isOver && canDrop) {
+    backgroundColor = '#B2F5EA';
+    borderColor = '#3182CE';
+    boxShadow = '0 0 0 3px rgba(49, 130, 206, 0.4)';
+  }
+
+  return (
+    <div
+      ref={drop}
+      style={{
+        padding: '12px', minHeight: '160px', position: 'relative',
+        backgroundColor: backgroundColor, borderRadius: '6px',
+        boxShadow: boxShadow, display: 'flex', flexDirection: 'column',
+        gap: '10px', border: `1px solid ${borderColor}`,
+        transition: 'background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+      }}
+    >
+      <strong
+        style={{
+          alignSelf: 'flex-end', fontSize: '0.9rem', color: dayNumberColor,
+          backgroundColor: isToday ? '#B2F5EA' : 'transparent',
+          borderRadius: isToday ? '50%' : '0', padding: isToday ? '3px 8px' : '0',
+          lineHeight: '1',
+        }}
+      >
+        {dayNumber}
+      </strong>
+
+      {day.therapists.length > 0 ? (
+        day.therapists.map((therapist, idx) => {
+          const initials = therapist.split(' ').map((word) => word[0]).join('').toUpperCase();
+          const therapistBlockColor = getTherapistColor(therapist);
+
+          return (
+            <div
+              key={idx}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '12px',
+                padding: '8px 12px', backgroundColor: '#E6FFFA', color: '#234E52',
+                borderRadius: '8px', justifyContent: 'space-between',
+                fontWeight: '600', boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+              }}
+            >
+              <div
+                style={{
+                  backgroundColor: therapistBlockColor, color: 'white',
+                  borderRadius: '50%', width: '40px', height: '40px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '1.1rem', flexShrink: 0,
+                }}
+              >
+                {initials}
+              </div>
+              <span style={{ fontSize: '1.05rem', flexGrow: 1 }}>{therapist}</span>
+              <button
+                onClick={() => removeTherapist(therapist, day.dayKey)}
+                style={{
+                  marginLeft: '10px', color: '#E53E3E', cursor: 'pointer',
+                  background: 'transparent', border: 'none', fontWeight: 'bold',
+                  padding: '2px', lineHeight: '1', fontSize: '1.2rem', transition: 'color 0.2s',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = '#C53030')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = '#E53E3E')}
+                title={`Remove ${therapist}`}
+              >
+                ×
+              </button>
+            </div>
+          );
+        })
+      ) : (
+        !finalBlockedStatus && (
+          <div style={{
+            fontSize: '0.85rem', color: '#A0AEC0', textAlign: 'center',
+            marginTop: 'auto', marginBottom: 'auto'
+          }}>
+            Empty
+          </div>
+        )
+      )}
+      {finalBlockedStatus && !isToday && (
+        <div style={{
+          fontSize: '0.8rem', color: '#718096', textAlign: 'center',
+          marginTop: 'auto', marginBottom: 'auto'
+        }}>
+          {isWeekend && !isBlocked ? 'Weekend' : 'Blocked'}
+        </div>
+      )}
+    </div>
+  );
+});
+
+const Calendar = React.memo(({ monthDays, moveTherapist, removeTherapist, todayDate, blockedDaysForYear }) => {
+  const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const firstDayOfMonth = monthDays.length > 0 ? monthDays[0].date.getDay() : 0;
+
+  return (
+    <>
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px',
+        marginTop: '20px', marginBottom: '8px', fontWeight: '600',
+        color: '#4A5568', textAlign: 'center',
+      }}>
+        {daysOfWeek.map(dayName => <div key={dayName}>{dayName}</div>)}
+      </div>
+
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px',
+      }}>
+        {Array.from({ length: firstDayOfMonth }).map((_, index) => (
+          <div key={`empty-${index}`} style={{
+            backgroundColor: '#F7FAFC', borderRadius: '6px', minHeight: '160px',
+          }} />
+        ))}
+        {monthDays.map((day) => {
+          const isToday = todayDate && day.date.toDateString() === todayDate.toDateString();
+          const isBlocked = blockedDaysForYear.includes(day.dayKey);
+          return (
+            <CalendarDay
+              key={day.dayKey}
+              day={day}
+              moveTherapist={moveTherapist}
+              removeTherapist={removeTherapist}
+              isToday={isToday}
+              isBlocked={isBlocked}
+            />
+          );
+        })}
+      </div>
+    </>
+  );
+});
+
+const TherapistList = React.memo(({ therapistGroups, collapsedRoles, toggleCollapse }) => {
+  return (
+    <div style={cardStyle}>
+      <h2 style={sectionHeadingStyle}>Therapists</h2>
+      <div style={{ paddingTop: '10px' }}>
+        {therapistGroups.map((group) => (
+          <div key={group.role} style={{ marginBottom: '8px' }}>
+            <button
+              onClick={() => toggleCollapse(group.role)}
+              style={{
+                background: 'transparent', border: 'none', padding: '6px 0',
+                fontSize: '1.1rem', fontWeight: '600', color: '#4A5568',
+                cursor: 'pointer', display: 'flex', alignItems: 'center',
+                width: '100%', textAlign: 'left', outline: 'none',
+                transition: 'color 0.2s ease, background-color 0.2s ease',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F7FAFC'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            >
+              <span style={{
+                marginRight: '8px', color: '#718096', fontSize: '1.1em',
+                fontWeight: 'bold', lineHeight: '1', width: '1em',
+                display: 'inline-block', textAlign: 'center',
+              }}>
+                {collapsedRoles[group.role] ? '+' : '-'}
+              </span>
+              {group.role}
+            </button>
+            {!collapsedRoles[group.role] && (
+              <div style={{
+                display: 'flex', flexWrap: 'wrap', gap: '8px',
+                marginTop: '8px', paddingLeft: '20px',
+              }}>
+                {group.therapists.map((name) => (
+                  <Therapist key={name} name={name} />
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+});
+
+const WFHTable = React.memo(({ therapists, workingFromHome, setWorkingFromHome }) => {
+  return (
+    <div style={cardStyle}>
+      <h3 style={sectionHeadingStyle}>Set Working from Home Days</h3>
+      <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: '0.9rem' }}>
+        <thead>
+          <tr>
+            <th style={tableHeaderStyle}>Therapist</th>
+            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map((day) => (
+              <th key={day} style={tableHeaderStyle}>{day}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {therapists.map((therapist) => (
+            <tr key={therapist}>
+              <td style={{ ...tableCellStyle, textAlign: 'left', fontWeight: '500' }}>{therapist}</td>
+              {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => (
+                <td key={day} style={tableCellStyle}>
+                  <input
+                    type="checkbox"
+                    style={{ cursor: 'pointer' }}
+                    checked={workingFromHome[therapist]?.[day] || false}
+                    onChange={() =>
+                      setWorkingFromHome((prev) => ({
+                        ...prev,
+                        [therapist]: {
+                          ...prev[therapist],
+                          [day]: !prev[therapist]?.[day],
+                        },
+                      }))
+                    }
+                  />
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+});
+
+const AssignmentTracker = React.memo(({ therapists, assignmentCounts, averageShiftsPerTherapist, workingFromHome }) => {
+  const getColorForAssignmentCount = useCallback((count) => {
+    if (averageShiftsPerTherapist === 0 || therapists.length === 0) return '#A0AEC0';
+    const avg = parseFloat(averageShiftsPerTherapist);
+    if (count < avg * 0.75) return '#68D391';
+    if (count > avg * 1.25) return '#FC8181';
+    if (count > avg) return '#F6AD55';
+    return '#4FD1C5';
+  }, [averageShiftsPerTherapist, therapists.length]);
+
+  const sortedTherapists = useMemo(() => {
+    return [...therapists].sort((a, b) => {
+      const countA = assignmentCounts[a];
+      const countB = assignmentCounts[b];
+      if (countA !== countB) {
+        return countA - countB;
+      }
+      return a.localeCompare(b);
+    });
+  }, [therapists, assignmentCounts]);
+
+  return (
+    <div style={cardStyle}>
+      <h3 style={sectionHeadingStyle}>Therapist Assignment Tracker</h3>
+      <div style={{
+        fontSize: '0.9rem', color: '#718096', marginBottom: '15px', textAlign: 'center'
+      }}>
+        Monthly Average: <strong>{averageShiftsPerTherapist}</strong> shifts per therapist
+      </div>
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px',
+      }}>
+        {sortedTherapists.map((therapist) => {
+          const count = assignmentCounts[therapist];
+          const assignmentColor = getColorForAssignmentCount(count);
+          const therapistWfhDays = Object.entries(workingFromHome[therapist] || {})
+            .filter(([, isWfh]) => isWfh)
+            .map(([day]) => day.substring(0, 3));
+          return (
+            <div
+              key={therapist}
+              style={{
+                padding: '12px', backgroundColor: '#F7FAFC', color: '#234E52',
+                borderRadius: '6px', fontSize: '0.9rem',
+                border: `1px solid ${assignmentColor}`, boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+                display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
+                gap: '6px', position: 'relative'
+              }}
+            >
+              <strong style={{ display: 'block' }}>{therapist}</strong>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>Assigned: {count}</span>
+                <span style={{
+                  width: '10px', height: '10px', borderRadius: '50%',
+                  backgroundColor: assignmentColor, display: 'inline-block', flexShrink: 0,
+                }} title={`Assignment Status: ${count} shifts`}></span>
+              </div>
+              {therapistWfhDays.length > 0 && (
+                <div style={{ fontSize: '0.8rem', color: '#718096' }}>
+                  WFH: {therapistWfhDays.join(', ')}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+});
+
+const CalendarControls = React.memo(({ currentYear, currentMonth, liveDateTime, setCurrentYear, changeMonth }) => {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
+      <h2 style={{ color: '#1A202C', margin: 0, fontSize: '1.5rem' }}>
+        {new Date(currentYear, currentMonth, 1).toLocaleString("default", { month: "long" })} {currentYear}
+        <span className="generated-text" style={{ fontSize: '0.8em', color: '#666', marginLeft: '15px' }}>
+          (Generated: {liveDateTime})
+        </span>
+      </h2>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <select
+          value={currentYear}
+          onChange={(e) => setCurrentYear(parseInt(e.target.value))}
+          style={{
+            padding: '10px 14px', border: '1px solid #CBD5E0', borderRadius: '6px',
+            backgroundColor: '#FFFFFF', fontSize: '1rem', cursor: 'pointer', outline: 'none',
+          }}
+        >
+          <option value={2025}>2025</option>
+          <option value={2026}>2026</option>
+        </select>
+        <button
+          type="button"
+          style={{ ...buttonStyle, marginRight: '10px' }}
+          onClick={() => changeMonth('prev')}
+          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}
+        >
+          ← Previous
+        </button>
+        <button
+          type="button"
+          style={buttonStyle}
+          onClick={() => changeMonth('next')}
+          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}
+        >
+          Next →
+        </button>
+      </div>
+    </div>
+  );
+});
+
+const ActionButtons = React.memo(({ goToToday, autoRoster, resetCalendar, saveAsPNG, generateShareLink }) => {
+  return (
+    <div style={{ marginTop: '30px', display: 'flex', gap: '12px', flexWrap: 'wrap', borderTop: '1px solid #E2E8F0', paddingTop: '20px' }}>
+      <button type="button" style={buttonStyle} onClick={goToToday} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}>Today</button>
+      <button
+        type="button"
+        style={{ ...buttonStyle, backgroundColor: '#38A169', color: 'white', border: '1px solid #38A169' }}
+        onClick={autoRoster}
+        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#2F855A'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#38A169'; }}
+      >
+        Auto Roster
+      </button>
+      <button type="button" style={buttonStyle} onClick={resetCalendar} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}>Reset Calendar</button>
+      <button type="button" style={buttonStyle} onClick={saveAsPNG} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}>Save as PNG</button>
+      <button
+        type="button"
+        style={{ ...buttonStyle, backgroundColor: '#3182CE', color: 'white', border: '1px solid #3182CE' }}
+        onClick={generateShareLink}
+        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#2B6CB0'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#3182CE'; }}
+      >
+        Share Link
+      </button>
+    </div>
+  );
+});
+
+const PatchNotesSection = React.memo(({ patchNotes }) => {
+  return (
+    <div style={{ padding: '0px 10px' }}>
+      <h2 style={{ marginTop: 0, marginBottom: '20px', color: '#1A202C', fontSize: '1.5rem' }}>Application Patch Notes</h2>
+      {patchNotes.map((patch, index) => (
+        <div key={index} style={{ marginBottom: '25px', paddingBottom: '15px', borderBottom: '1px dashed #E2E8F0' }}>
+          <h3 style={{ margin: '0 0 8px 0', color: '#2D3748', fontSize: '1.2rem' }}>
+            Version {patch.version} <span style={{ fontSize: '0.85em', color: '#718096', fontWeight: 'normal' }}>({patch.date})</span>
+          </h3>
+          <ul style={{ listStyleType: 'disc', paddingLeft: '25px', margin: 0 }}>
+            {patch.changes.map((change, i) => (
+              <li key={i} style={{ marginBottom: '5px', color: '#4A5568', lineHeight: '1.4' }}>{change}</li>
+            ))}
+          </ul>
+        </div>
+      ))}
+      <p style={{ fontSize: '0.9rem', color: '#718096', textAlign: 'center', marginTop: '30px' }}>End of Patch Notes.</p>
+    </div>
+  );
+});
+
+// --- Main App Component ---
+const App = () => {
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
+  const [activeTab, setActiveTab] = useState('calendar');
+  const [liveDateTime, setLiveDateTime] = useState('');
+
+  const initialCollapsedRolesState = useMemo(() => (
+    therapistGroups.reduce((acc, group) => {
+      acc[group.role] = false;
+      return acc;
+    }, {})
+  ), []);
+  const [collapsedRoles, setCollapsedRoles] = useState(initialCollapsedRolesState);
+
+  const [calendarData, setCalendarData] = useState(() => ({
+    2025: getCalendarForYear(2025),
+    2026: getCalendarForYear(2026),
+  }));
+
+  const [todayDate, setTodayDate] = useState(null);
+  const [autoRosterTriggered, setAutoRosterTriggered] = useState(false);
+
+  const [workingFromHome, setWorkingFromHome] = useState(
+    {
+      "Dominic Yeo": { Monday: false, Tuesday: true, Wednesday: true, Thursday: true, Friday: false },
+      "Kirsty Png": { Monday: false, Tuesday: false, Wednesday: true, Thursday: false, Friday: false },
+      "Soon Jiaying": { Monday: false, Tuesday: false, Wednesday: false, Thursday: false, Friday: true },
+      "Andrew Lim": { Monday: false, Tuesday: false, Wednesday: false, Thursday: false, Friday: true },
+      "Janice Leong": { Monday: false, Tuesday: false, Wednesday: true, Thursday: false, Friday: false },
+      "Oliver Tan": { Monday: false, Tuesday: true, Wednesday: false, Thursday: false, Friday: false },
+      "Claudia Ahl": { Monday: false, Tuesday: false, Wednesday: false, Thursday: true, Friday: false },
+      "Seanna Neo": { Monday: false, Tuesday: true, Wednesday: false, Thursday: false, Friday: false },
+      "Xiao Hui": { Monday: false, Tuesday: false, Wednesday: false, Thursday: true, Friday: false },
+      "Tika Zainal": { Monday: false, Tuesday: true, Wednesday: true, Thursday: true, Friday: false },
+    }
+  );
+
+  const currentBlockedDays = useMemo(() => (
+    currentYear === 2025 ? blockedDays2025 : blockedDays2026
+  ), [currentYear]);
+
+  // --- Start of Tracker Section Calculations (Memoized for performance) ---
+  const assignmentCounts = useMemo(() => {
+    return therapists.reduce((acc, therapist) => {
+      acc[therapist] = calendarData[currentYear]?.[currentMonth]?.filter((day) =>
+        day.therapists.includes(therapist)
+      ).length || 0;
+      return acc;
+    }, {});
+  }, [calendarData, currentYear, currentMonth]);
+
+  const totalAssignedShiftsOverall = useMemo(() => (
+    Object.values(assignmentCounts).reduce((sum, count) => sum + count, 0)
+  ), [assignmentCounts]);
+
+  const averageShiftsPerTherapist = useMemo(() => (
+    therapists.length > 0
+      ? (totalAssignedShiftsOverall / therapists.length).toFixed(1)
+      : 0
+  ), [totalAssignedShiftsOverall, therapists.length]);
+  // --- End of Tracker Section Calculations ---
+
+  const actualCurrentDate = useMemo(() => new Date(), []);
+  const actualCurrentDay = useMemo(() => actualCurrentDate.getDate(), [actualCurrentDate]);
+  const actualCurrentMonthIndex = useMemo(() => actualCurrentDate.getMonth(), [actualCurrentDate]);
+  const actualCurrentYear = useMemo(() => actualCurrentDate.getFullYear(), [actualCurrentDate]);
 
   // Effect hook to manage 'today' highlight and month display when the year changes
   useEffect(() => {
@@ -597,20 +769,15 @@ const patchNotes = [
     const updateDateTime = () => {
       const now = new Date();
       setLiveDateTime(now.toLocaleString('en-SG', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false // Use 24-hour format
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        hour12: false
       }));
     };
 
-    updateDateTime(); // Set initial value
-    const intervalId = setInterval(updateDateTime, 1000); // Update every second
-
-    return () => clearInterval(intervalId); // Cleanup on component unmount
+    updateDateTime();
+    const intervalId = setInterval(updateDateTime, 1000);
+    return () => clearInterval(intervalId);
   }, []);
 
   // Effect hook to parse URL for shared data on initial load
@@ -625,21 +792,23 @@ const patchNotes = [
         setCalendarData(decompressed.calendarData);
         setWorkingFromHome(decompressed.workingFromHome);
         console.log(`Calendar and WFH data loaded from shared link (Timestamp: ${decompressed.timestamp || 'N/A'})!`);
+        toast.info("Calendar data loaded from shared link!", { position: "top-center", autoClose: 3000 });
         window.history.replaceState({}, document.title, window.location.pathname);
       }
     }
   }, []);
 
-  const goToToday = () => {
+  const goToToday = useCallback(() => {
     if (currentYear === actualCurrentYear) {
       setCurrentMonth(actualCurrentMonthIndex);
       setTodayDate(new Date(actualCurrentYear, actualCurrentMonthIndex, actualCurrentDay));
+      toast.info("Navigated to today's date!", { position: "top-right", autoClose: 2000 });
     } else {
-      alert("Cannot go to 'Today' in a different year. Please switch to the current year first.");
+      toast.warn("Cannot go to 'Today' in a different year. Please switch to the current year first.", { position: "top-center", autoClose: 4000 });
     }
-  };
+  }, [currentYear, actualCurrentYear, actualCurrentMonthIndex, actualCurrentDay]);
 
-  const moveTherapist = (name, dayKey) => {
+  const moveTherapist = useCallback((name, dayKey) => {
     setCalendarData((prevCalendarData) => {
       const updatedCalendarData = { ...prevCalendarData };
       const yearCalendar = [...updatedCalendarData[currentYear]];
@@ -660,9 +829,9 @@ const patchNotes = [
       updatedCalendarData[currentYear] = yearCalendar;
       return updatedCalendarData;
     });
-  };
+  }, [currentYear, currentMonth, currentBlockedDays]);
 
-  const removeTherapist = (name, dayKey) => {
+  const removeTherapist = useCallback((name, dayKey) => {
     setCalendarData((prevCalendarData) => {
       const updatedCalendarData = { ...prevCalendarData };
       const yearCalendar = [...updatedCalendarData[currentYear]];
@@ -677,46 +846,49 @@ const patchNotes = [
       updatedCalendarData[currentYear] = yearCalendar;
       return updatedCalendarData;
     });
-  };
+  }, [currentYear, currentMonth]);
 
-  const resetCalendar = () => {
+  const resetCalendar = useCallback(() => {
     setCalendarData((prevCalendarData) => ({
       ...prevCalendarData,
       2025: getCalendarForYear(2025),
       2026: getCalendarForYear(2026),
     }));
-    setWorkingFromHome({ // Reset WFH to initial state
-        "Dominic Yeo": { Monday: false, Tuesday: true, Wednesday: true, Thursday: true, Friday: false },
-        "Kirsty Png": { Monday: false, Tuesday: false, Wednesday: true, Thursday: false, Friday: false },
-        "Soon Jiaying": { Monday: false, Tuesday: false, Wednesday: false, Thursday: false, Friday: true },
-        "Andrew Lim": { Monday: false, Tuesday: false, Wednesday: false, Thursday: false, Friday: true },
-        "Janice Leong": { Monday: false, Tuesday: false, Wednesday: true, Thursday: false, Friday: false },
-        "Oliver Tan": { Monday: false, Tuesday: true, Wednesday: false, Thursday: false, Friday: false },
-        "Claudia Ahl": { Monday: false, Tuesday: false, Wednesday: false, Thursday: true, Friday: false },
-        "Seanna Neo": { Monday: false, Tuesday: true, Wednesday: false, Thursday: false, Friday: false },
-        "Xiao Hui": { Monday: false, Tuesday: false, Wednesday: false, Thursday: true, Friday: false },
-        "Tika Zainal": { Monday: false, Tuesday: true, Wednesday: true, Thursday: true, Friday: false },
-      });
+    setWorkingFromHome({
+      "Dominic Yeo": { Monday: false, Tuesday: true, Wednesday: true, Thursday: true, Friday: false },
+      "Kirsty Png": { Monday: false, Tuesday: false, Wednesday: true, Thursday: false, Friday: false },
+      "Soon Jiaying": { Monday: false, Tuesday: false, Wednesday: false, Thursday: false, Friday: true },
+      "Andrew Lim": { Monday: false, Tuesday: false, Wednesday: false, Thursday: false, Friday: true },
+      "Janice Leong": { Monday: false, Tuesday: false, Wednesday: true, Thursday: false, Friday: false },
+      "Oliver Tan": { Monday: false, Tuesday: true, Wednesday: false, Thursday: false, Friday: false },
+      "Claudia Ahl": { Monday: false, Tuesday: false, Wednesday: false, Thursday: true, Friday: false },
+      "Seanna Neo": { Monday: false, Tuesday: true, Wednesday: false, Thursday: false, Friday: false },
+      "Xiao Hui": { Monday: false, Tuesday: false, Wednesday: false, Thursday: true, Friday: false },
+      "Tika Zainal": { Monday: false, Tuesday: true, Wednesday: true, Thursday: true, Friday: false },
+    });
     setAutoRosterTriggered(false);
-  };
+    toast.info("Calendar settings have been reset!", { position: "top-right", autoClose: 2000 });
+  }, []);
 
-  const saveAsPNG = () => {
+  const saveAsPNG = useCallback(() => {
     const calendarContainer = document.getElementById("calendar-container-content");
     if (!calendarContainer) {
       console.error("Calendar container content not found for PNG export.");
+      toast.error("Failed to capture calendar. Please try again.", { position: "bottom-center", autoClose: 3000 });
       return;
     }
 
-    // Temporarily add a style to extend the canvas area for the screenshot
+    toast.info("Generating PNG image...", { position: "bottom-center", autoClose: 1500 }); // Provide immediate feedback
+
     const style = document.createElement('style');
     style.id = 'png-export-styles';
     style.innerHTML = `
       #calendar-container-content {
-        padding-right: 150px !important; /* Adjust as needed to make sure generated text is visible */
-        padding-top: 50px !important; /* Add padding to the top for the month text */
+        padding-right: 150px !important;
+        padding-top: 50px !important;
       }
       #calendar-container-content h2 .generated-text {
-        font-size: 0.7em !important; /* Make the generated text smaller for PNG */
+        font-size: 0.7em !important;
       }
     `;
     document.head.appendChild(style);
@@ -724,7 +896,7 @@ const patchNotes = [
     html2canvas(calendarContainer, {
       backgroundColor: "#FFFFFF",
       useCORS: true,
-      scale: 2 // Increase scale for better resolution
+      scale: 2
     }).then((canvas) => {
       const imgData = canvas.toDataURL("image/png");
       const link = document.createElement("a");
@@ -732,18 +904,19 @@ const patchNotes = [
       link.href = imgData;
       link.download = `Therapist_Roster_${currentMonthName}_${currentYear}.png`;
       link.click();
+      toast.success("PNG image saved successfully!", { position: "bottom-center", autoClose: 3000 });
     }).catch((error) => {
       console.error("Error generating PNG:", error);
+      toast.error("Error saving PNG image. Please try again.", { position: "bottom-center", autoClose: 3000 });
     }).finally(() => {
-      // Remove the temporary style
       const tempStyle = document.getElementById('png-export-styles');
       if (tempStyle) {
         tempStyle.remove();
       }
     });
-  };
+  }, [calendarData, currentYear, currentMonth]);
 
-  const generateShareLink = () => {
+  const generateShareLink = useCallback(() => {
     const dataToShare = {
       calendarData: calendarData,
       workingFromHome: workingFromHome
@@ -753,15 +926,33 @@ const patchNotes = [
 
     navigator.clipboard.writeText(shareableUrl)
       .then(() => {
-        alert("Shareable link copied to clipboard! Share it to load this calendar state.");
+        toast.success("Shareable link copied to clipboard!", {
+          position: "bottom-center",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+        });
       })
       .catch((err) => {
         console.error("Failed to copy link: ", err);
-        alert("Failed to copy link to clipboard. You can try copying it manually from the browser's address bar after it updates.");
+        toast.error("Failed to copy link to clipboard.", {
+          position: "bottom-center",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+        });
       });
-  };
+  }, [calendarData, workingFromHome]);
 
-  const autoRoster = () => {
+  const autoRoster = useCallback(() => {
     setCalendarData((prevCalendarData) => {
       const updatedCalendarData = { ...prevCalendarData };
       const currentYearCalendar = [...updatedCalendarData[currentYear]];
@@ -838,34 +1029,10 @@ const patchNotes = [
       return updatedCalendarData;
     });
     setAutoRosterTriggered(true);
-  };
+    toast.success("Auto Roster completed!", { position: "top-right", autoClose: 2000 });
+  }, [currentYear, currentMonth, currentBlockedDays, workingFromHome]);
 
-  const buttonStyle = {
-    padding: '10px 18px',
-    background: '#FFFFFF',
-    color: '#4A5568',
-    border: '1px solid #CBD5E0',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontWeight: '500',
-    transition: 'background-color 0.2s, box-shadow 0.2s',
-    boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
-  };
-
-  const tabButtonStyle = {
-    padding: '12px 20px',
-    background: 'none',
-    border: 'none',
-    cursor: 'pointer',
-    fontSize: '1.1rem',
-    fontWeight: '600',
-    transition: 'color 0.2s, border-bottom 0.2s',
-    flexGrow: 1,
-    textAlign: 'center',
-    outline: 'none',
-  };
-
-  const changeMonth = (direction) => {
+  const changeMonth = useCallback((direction) => {
     setCurrentMonth((prevMonth) => {
       let newMonth = prevMonth;
       if (direction === 'next') {
@@ -876,357 +1043,109 @@ const patchNotes = [
       setTodayDate(null);
       return newMonth;
     });
-  };
+  }, []);
 
-  const cardStyle = {
-    backgroundColor: '#FFFFFF',
-    padding: '15px',
-    borderRadius: '8px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-    marginBottom: '20px',
-  };
-  const tableCellStyle = { border: '1px solid #E2E8F0', padding: '8px', textAlign: 'center' };
-  const tableHeaderStyle = { ...tableCellStyle, backgroundColor: '#F7FAFC', fontWeight: '600', color: '#4A5568' };
-
-  // Common style for section headings (h2 and h3)
-  const sectionHeadingStyle = {
-    marginTop: 0,
-    marginBottom: '15px',
-    color: '#2D3748',
-    fontSize: '1.2rem', // Consistent font size
-    fontWeight: '600',
-    paddingBottom: '10px',
-    borderBottom: '1px solid #E2E8F0'
-  };
-
-  // Toggle collapse state for a role
-  const toggleCollapse = (role) => {
+  const toggleCollapse = useCallback((role) => {
     setCollapsedRoles(prev => ({
       ...prev,
       [role]: !prev[role]
     }));
-  };
-
+  }, []);
 
   return (
     <DndProvider backend={HTML5Backend}>
       <div style={{
         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"',
-        padding: '20px',
-        backgroundColor: '#F9FAFB',
-        minHeight: '100vh',
+        padding: '20px', backgroundColor: '#F9FAFB', minHeight: '100vh',
       }}>
+        <ToastContainer />
+
         <div style={{
-          display: 'flex',
-          gap: '30px',
-          maxWidth: '1800px',
-          margin: '0 auto',
+          display: 'flex', gap: '30px', maxWidth: '1800px', margin: '0 auto',
         }}>
 
+          {/* Left Sidebar */}
           <div style={{
-            flex: '0 0 400px', // Fixed width for the sidebar
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '20px'
+            flex: '0 0 400px', display: 'flex', flexDirection: 'column', gap: '20px'
           }}>
-            <div style={cardStyle}>
-              <h2 style={sectionHeadingStyle}> {/* Applied consistent style */}
-                Therapists
-              </h2>
-              <div style={{ paddingTop: '10px' }}>
-                {therapistGroups.map((group) => (
-                  <div key={group.role} style={{ marginBottom: '8px' }}> {/* Reduced margin-bottom */}
-                    <button
-                      onClick={() => toggleCollapse(group.role)}
-                      style={{
-                        background: 'transparent', // Make background transparent
-                        border: 'none', // Remove border
-                        padding: '6px 0', // Reduced padding
-                        fontSize: '1.1rem',
-                        fontWeight: '600',
-                        color: '#4A5568',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        width: '100%',
-                        textAlign: 'left',
-                        outline: 'none',
-                        transition: 'color 0.2s ease, background-color 0.2s ease', // Smooth transition
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F7FAFC'} // Subtle background on hover
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'} // Reset on leave
-                    >
-                      <span style={{
-                        marginRight: '8px',
-                        color: '#718096',
-                        fontSize: '1.1em', // Larger font size for +/- to match text height
-                        fontWeight: 'bold', // Make +/- bold
-                        lineHeight: '1',
-                        width: '1em', // Give it a fixed width to prevent text reflow
-                        display: 'inline-block', // Ensure width works
-                        textAlign: 'center', // Center +/- in its space
-                      }}>
-                        {collapsedRoles[group.role] ? '+' : '-'}
-                      </span>
-                      {group.role}
-                    </button>
-                    {!collapsedRoles[group.role] && ( // Conditionally render content
-                      <div style={{
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        gap: '8px',
-                        marginTop: '8px', // Reduced margin top for tighter spacing
-                        paddingLeft: '20px', // Indent therapists for visual hierarchy
-                      }}>
-                        {group.therapists.map((name) => (
-                          <Therapist key={name} name={name} />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div style={cardStyle}>
-              <h3 style={sectionHeadingStyle}> {/* Applied consistent style */}
-                Set Working from Home Days
-              </h3>
-              <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: '0.9rem' }}>
-                <thead>
-                  <tr>
-                    <th style={tableHeaderStyle}>Therapist</th>
-                    {['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map((day) => (
-                      <th key={day} style={tableHeaderStyle}>{day}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {therapists.map((therapist) => (
-                    <tr key={therapist}>
-                      <td style={{ ...tableCellStyle, textAlign: 'left', fontWeight: '500' }}>{therapist}</td>
-                      {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => (
-                        <td key={day} style={tableCellStyle}>
-                          <input
-                            type="checkbox"
-                            style={{ cursor: 'pointer' }}
-                            checked={workingFromHome[therapist]?.[day] || false}
-                            onChange={() =>
-                              setWorkingFromHome((prev) => ({
-                                ...prev,
-                                [therapist]: {
-                                  ...prev[therapist],
-                                  [day]: !prev[therapist]?.[day],
-                                },
-                              }))
-                            }
-                          />
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div style={cardStyle}>
-              <h3 style={sectionHeadingStyle}> {/* Applied consistent style */}
-                Therapist Assignment Tracker
-              </h3>
-              <div style={{
-                fontSize: '0.9rem',
-                color: '#718096',
-                marginBottom: '15px',
-                textAlign: 'center'
-              }}>
-                Monthly Average: <strong>{averageShiftsPerTherapist}</strong> shifts per therapist
-              </div>
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-                gap: '12px',
-              }}>
-                {sortedTherapists.map((therapist) => {
-                  const count = assignmentCounts[therapist];
-                  const assignmentColor = getColorForAssignmentCount(count);
-                  const therapistWfhDays = Object.entries(workingFromHome[therapist] || {})
-                    .filter(([, isWfh]) => isWfh)
-                    .map(([day]) => day.substring(0, 3)); // e.g., "Mon", "Tue"
-                  return (
-                    <div
-                      key={therapist}
-                      style={{
-                        padding: '12px',
-                        backgroundColor: '#F7FAFC', // Lighter background for tracker cards
-                        color: '#234E52',
-                        borderRadius: '6px',
-                        fontSize: '0.9rem',
-                        border: `1px solid ${assignmentColor}`, // Border color based on assignment status
-                        boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'flex-start', // Align text to start
-                        gap: '6px',
-                        position: 'relative'
-                      }}
-                    >
-                      <strong style={{ display: 'block' }}>{therapist}</strong>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span>Assigned: {count}</span>
-                        <span style={{
-                          width: '10px',
-                          height: '10px',
-                          borderRadius: '50%',
-                          backgroundColor: assignmentColor,
-                          display: 'inline-block',
-                          flexShrink: 0,
-                        }} title={`Assignment Status: ${count} shifts`}></span>
-                      </div>
-                      {therapistWfhDays.length > 0 && (
-                          <div style={{ fontSize: '0.8rem', color: '#718096' }}>
-                              WFH: {therapistWfhDays.join(', ')}
-                          </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+            <TherapistList
+              therapistGroups={therapistGroups}
+              collapsedRoles={collapsedRoles}
+              toggleCollapse={toggleCollapse}
+            />
+            <WFHTable
+              therapists={therapists}
+              workingFromHome={workingFromHome}
+              setWorkingFromHome={setWorkingFromHome}
+            />
+            <AssignmentTracker
+              therapists={therapists}
+              assignmentCounts={assignmentCounts}
+              averageShiftsPerTherapist={averageShiftsPerTherapist}
+              workingFromHome={workingFromHome}
+            />
           </div>
 
+          {/* Main Content Area */}
           <div style={{
-            flex: '1',
-            backgroundColor: '#FFFFFF',
-            padding: '25px',
-            borderRadius: '12px',
-            boxShadow: '0 6px 18px rgba(0,0,0,0.07)',
+            flex: '1', backgroundColor: '#FFFFFF', padding: '25px',
+            borderRadius: '12px', boxShadow: '0 6px 18px rgba(0,0,0,0.07)',
           }}>
             {/* Tab Navigation Buttons */}
             <div style={{ display: 'flex', marginBottom: '25px', borderBottom: '1px solid #E2E8F0' }}>
-                <button
-                    onClick={() => setActiveTab('calendar')}
-                    style={{
-                        ...tabButtonStyle,
-                        borderBottom: activeTab === 'calendar' ? '2px solid #3182CE' : 'none',
-                        color: activeTab === 'calendar' ? '#3182CE' : '#4A5568',
-                    }}
-                >
-                    Calendar
-                </button>
-                <button
-                    onClick={() => setActiveTab('patchNotes')}
-                    style={{
-                        ...tabButtonStyle,
-                        borderBottom: activeTab === 'patchNotes' ? '2px solid #3182CE' : 'none',
-                        color: activeTab === 'patchNotes' ? '#3182CE' : '#4A5568',
-                    }}
-                >
-                    Patch Notes
-                </button>
+              <button
+                onClick={() => setActiveTab('calendar')}
+                style={{
+                  ...tabButtonStyle,
+                  borderBottom: activeTab === 'calendar' ? '2px solid #3182CE' : 'none',
+                  color: activeTab === 'calendar' ? '#3182CE' : '#4A5568',
+                }}
+              >
+                Calendar
+              </button>
+              <button
+                onClick={() => setActiveTab('patchNotes')}
+                style={{
+                  ...tabButtonStyle,
+                  borderBottom: activeTab === 'patchNotes' ? '2px solid #3182CE' : 'none',
+                  color: activeTab === 'patchNotes' ? '#3182CE' : '#4A5568',
+                }}
+              >
+                Patch Notes
+              </button>
             </div>
 
             {/* Conditional Rendering based on activeTab */}
             {activeTab === 'calendar' && (
-                <>
-                    <div id="calendar-container-content">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
-                            <h2 style={{ color: '#1A202C', margin: 0, fontSize: '1.5rem' }}>
-                                {calendarData[currentYear]?.[currentMonth]?.[0]?.date.toLocaleString("default", { month: "long" })} {currentYear}
-                                <span className="generated-text" style={{ fontSize: '0.8em', color: '#666', marginLeft: '15px' }}>
-                                    (Generated: {liveDateTime})
-                                </span>
-                            </h2>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <select
-                                    value={currentYear}
-                                    onChange={(e) => setCurrentYear(parseInt(e.target.value))}
-                                    style={{
-                                        padding: '10px 14px',
-                                        border: '1px solid #CBD5E0',
-                                        borderRadius: '6px',
-                                        backgroundColor: '#FFFFFF',
-                                        fontSize: '1rem',
-                                        cursor: 'pointer',
-                                        outline: 'none',
-                                    }}
-                                >
-                                    <option value={2025}>2025</option>
-                                    <option value={2026}>2026</option>
-                                </select>
-
-                                <button
-                                    type="button"
-                                    style={{ ...buttonStyle, marginRight: '10px' }}
-                                    onClick={() => changeMonth('prev')}
-                                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }}
-                                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}
-                                >
-                                    ← Previous
-                                </button>
-                                <button
-                                    type="button"
-                                    style={buttonStyle}
-                                    onClick={() => changeMonth('next')}
-                                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }}
-                                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}
-                                >
-                                    Next →
-                                </button>
-                            </div>
-                        </div>
-
-                        <Calendar
-                            monthDays={calendarData[currentYear][currentMonth]}
-                            moveTherapist={moveTherapist}
-                            removeTherapist={removeTherapist}
-                            todayDate={todayDate}
-                            blockedDaysForYear={currentBlockedDays}
-                        />
-                    </div>
-
-                    <div style={{ marginTop: '30px', display: 'flex', gap: '12px', flexWrap: 'wrap', borderTop: '1px solid #E2E8F0', paddingTop: '20px' }}>
-                        <button type="button" style={buttonStyle} onClick={goToToday} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}>Today</button>
-                        <button
-                            type="button"
-                            style={{ ...buttonStyle, backgroundColor: '#38A169', color: 'white', border: '1px solid #38A169' }}
-                            onClick={autoRoster}
-                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#2F855A'; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#38A169'; }}
-                        >
-                            Auto Roster
-                        </button>
-                        <button type="button" style={buttonStyle} onClick={resetCalendar} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}>Reset Calendar</button>
-                        <button type="button" style={buttonStyle} onClick={saveAsPNG} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}>Save as PNG</button>
-                        <button
-                            type="button"
-                            style={{ ...buttonStyle, backgroundColor: '#3182CE', color: 'white', border: '1px solid #3182CE' }}
-                            onClick={generateShareLink}
-                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#2B6CB0'; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#3182CE'; }}
-                        >
-                            Share Link
-                        </button>
-                    </div>
-                </>
+              <>
+                <div id="calendar-container-content">
+                  <CalendarControls
+                    currentYear={currentYear}
+                    currentMonth={currentMonth}
+                    liveDateTime={liveDateTime}
+                    setCurrentYear={setCurrentYear}
+                    changeMonth={changeMonth}
+                  />
+                  <Calendar
+                    monthDays={calendarData[currentYear][currentMonth]}
+                    moveTherapist={moveTherapist}
+                    removeTherapist={removeTherapist}
+                    todayDate={todayDate}
+                    blockedDaysForYear={currentBlockedDays}
+                  />
+                </div>
+                <ActionButtons
+                  goToToday={goToToday}
+                  autoRoster={autoRoster}
+                  resetCalendar={resetCalendar}
+                  saveAsPNG={saveAsPNG}
+                  generateShareLink={generateShareLink}
+                />
+              </>
             )}
 
             {activeTab === 'patchNotes' && (
-                <div style={{ padding: '0px 10px' }}>
-                    <h2 style={{ marginTop: 0, marginBottom: '20px', color: '#1A202C', fontSize: '1.5rem' }}>Application Patch Notes</h2>
-                    {patchNotes.map((patch, index) => (
-                        <div key={index} style={{ marginBottom: '25px', paddingBottom: '15px', borderBottom: '1px dashed #E2E8F0' }}>
-                            <h3 style={{ margin: '0 0 8px 0', color: '#2D3748', fontSize: '1.2rem' }}>
-                                Version {patch.version} <span style={{ fontSize: '0.85em', color: '#718096', fontWeight: 'normal' }}>({patch.date})</span>
-                            </h3>
-                            <ul style={{ listStyleType: 'disc', paddingLeft: '25px', margin: 0 }}>
-                                {patch.changes.map((change, i) => (
-                                    <li key={i} style={{ marginBottom: '5px', color: '#4A5568', lineHeight: '1.4' }}>{change}</li>
-                                ))}
-                            </ul>
-                        </div>
-                    ))}
-                    <p style={{ fontSize: '0.9rem', color: '#718096', textAlign: 'center', marginTop: '30px' }}>End of Patch Notes.</p>
-                </div>
+              <PatchNotesSection patchNotes={patchNotes} />
             )}
           </div>
         </div>
