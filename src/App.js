@@ -710,7 +710,7 @@ const App = () => {
 
   const [workingFromHome, setWorkingFromHome] = useState(
     {
-      "Dominic Yeo": { Monday: false, Tuesday: true, Wednesday: true, Thursday: true, Friday: false },
+      "Dominic Yeo": { Monday: false, Tuesday: false, Wednesday: true, Thursday: false, Friday: false },
       "Kirsty Png": { Monday: false, Tuesday: false, Wednesday: true, Thursday: false, Friday: false },
       "Soon Jiaying": { Monday: false, Tuesday: false, Wednesday: false, Thursday: false, Friday: true },
       "Andrew Lim": { Monday: false, Tuesday: false, Wednesday: false, Thursday: false, Friday: true },
@@ -854,7 +854,7 @@ const App = () => {
       2026: getCalendarForYear(2026),
     }));
     setWorkingFromHome({
-      "Dominic Yeo": { Monday: false, Tuesday: true, Wednesday: true, Thursday: true, Friday: false },
+      "Dominic Yeo": { Monday: false, Tuesday: false, Wednesday: true, Thursday: false, Friday: false },
       "Kirsty Png": { Monday: false, Tuesday: false, Wednesday: true, Thursday: false, Friday: false },
       "Soon Jiaying": { Monday: false, Tuesday: false, Wednesday: false, Thursday: false, Friday: true },
       "Andrew Lim": { Monday: false, Tuesday: false, Wednesday: false, Thursday: false, Friday: true },
