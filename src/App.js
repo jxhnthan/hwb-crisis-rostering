@@ -482,7 +482,7 @@ const TherapistList = React.memo(({ therapistGroups, collapsedRoles, toggleColla
 const WFHTable = React.memo(({ therapists, workingFromHome, setWorkingFromHome }) => {
   return (
     <div style={cardStyle}>
-      <h3 style={sectionHeadingStyle}>Set Working from Home Days</h3>
+      <h3 style={sectionHeadingStyle}>Set Blocked Days</h3>
       <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: '0.9rem' }}>
         <thead>
           <tr>
