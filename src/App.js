@@ -863,7 +863,6 @@ const App = () => {
       "Claudia Ahl": { Monday: false, Tuesday: false, Wednesday: false, Thursday: true, Friday: false },
       "Seanna Neo": { Monday: false, Tuesday: true, Wednesday: false, Thursday: false, Friday: false },
       "Xiao Hui": { Monday: false, Tuesday: false, Wednesday: false, Thursday: true, Friday: false },
-      "Tika Zainal": { Monday: false, Tuesday: true, Wednesday: true, Thursday: true, Friday: false },
     });
     setAutoRosterTriggered(false);
     toast.info("Calendar settings have been reset!", { position: "top-right", autoClose: 2000 });
