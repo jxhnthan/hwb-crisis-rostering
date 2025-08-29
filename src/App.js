@@ -316,7 +316,7 @@ const CalendarDay = React.memo(({ day, moveTherapist, removeTherapist, isToday, 
         boxShadow: boxShadow, display: 'flex', flexDirection: 'column',
         gap: '10px', border: `1px solid ${borderColor}`,
         transition: 'background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
-        overflowY: 'auto', // Added to handle overflow of therapist cards
+        overflowY: 'auto',
       }}
     >
       <strong
@@ -409,7 +409,7 @@ const Calendar = React.memo(({ monthDays, moveTherapist, removeTherapist, todayD
       </div>
 
       <div style={{
-        display: 'grid', gridTemplateColumns: 'repeat(7, minmax(150px, 1fr))', gap: '8px', // Changed to minmax for better responsiveness
+        display: 'grid', gridTemplateColumns: 'repeat(7, minmax(150px, 1fr))', gap: '8px',
       }}>
         {Array.from({ length: firstDayOfMonth }).map((_, index) => (
           <div key={`empty-${index}`} style={{
@@ -639,7 +639,7 @@ const CalendarControls = React.memo(({ currentYear, currentMonth, liveDateTime, 
 
 const ActionButtons = React.memo(({ goToToday, autoRoster, resetCalendar, saveAsPNG, downloadCsv, generateShareLink }) => {
   return (
-    <div style={{ marginTop: '30px', display: 'flex', gap: '12px', flexWrap: 'wrap', borderTop: '1px solid #E2E8F0', paddingTop: '20px' }}>
+    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '20px' }}>
       <button type="button" style={buttonStyle} onClick={goToToday} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}>Today</button>
       <button
         type="button"
@@ -718,7 +718,6 @@ const App = () => {
   }));
 
   const [todayDate, setTodayDate] = useState(null);
-  const [autoRosterTriggered, setAutoRosterTriggered] = useState(false);
 
   const [workingFromHome, setWorkingFromHome] = useState(
     {
@@ -821,7 +820,7 @@ const App = () => {
 
   const moveTherapist = useCallback((name, dayKey) => {
     setCalendarData((prevCalendarData) => {
-      const updatedCalendarData = JSON.parse(JSON.stringify(prevCalendarData)); // Deep copy for immutability
+      const updatedCalendarData = JSON.parse(JSON.stringify(prevCalendarData));
       const yearCalendar = updatedCalendarData[currentYear];
       const monthIndex = yearCalendar.findIndex(month => month.some(day => day.dayKey === dayKey));
 
@@ -841,7 +840,7 @@ const App = () => {
 
   const removeTherapist = useCallback((name, dayKey) => {
     setCalendarData((prevCalendarData) => {
-      const updatedCalendarData = JSON.parse(JSON.stringify(prevCalendarData)); // Deep copy for immutability
+      const updatedCalendarData = JSON.parse(JSON.stringify(prevCalendarData));
       const yearCalendar = updatedCalendarData[currentYear];
       const monthIndex = yearCalendar.findIndex(month => month.some(day => day.dayKey === dayKey));
 
@@ -898,78 +897,56 @@ const App = () => {
   }, [currentYear]);
 
   const autoRoster = useCallback(() => {
-    const yearCalendar = [...calendarData[currentYear]];
-    const monthData = yearCalendar[currentMonth];
-    const newMonthData = [...monthData];
-
-    // Reset current month's assignments
-    newMonthData.forEach(day => {
-      day.therapists = [];
-    });
-
     const dailyTherapistCount = 1;
     const workingTherapists = therapists;
-
     let therapistIndex = 0;
 
-    for (let i = 0; i < newMonthData.length; i++) {
-      const day = newMonthData[i];
-      const date = day.date;
-      const dayOfWeek = date.toLocaleString('en-US', { weekday: 'long' });
-
-      const isHoliday = currentBlockedDays.includes(day.dayKey);
-      const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-
-      if (!isHoliday && !isWeekend) {
-        const assignedForDay = [];
-        let assignedCount = 0;
-
-        // Try to fill the required slots
-        while (assignedCount < dailyTherapistCount && assignedForDay.length < workingTherapists.length) {
-          const therapist = workingTherapists[therapistIndex];
-          const isWfh = workingFromHome[therapist]?.[dayOfWeek] || false;
-
-          if (!isWfh) {
-            assignedForDay.push(therapist);
-            assignedCount++;
-          }
-
-          therapistIndex = (therapistIndex + 1) % workingTherapists.length;
-        }
-
-        // Shuffle therapists on this day to avoid static order
-        day.therapists = assignedForDay.sort(() => Math.random() - 0.5);
-      }
-    }
-
-    // Create a new, updated calendar object to trigger re-render
     setCalendarData(prevCalendarData => {
-      const newCalendarData = {
-        ...prevCalendarData,
-        [currentYear]: prevCalendarData[currentYear].map((month, idx) => {
-          if (idx === currentMonth) {
-            return newMonthData;
+      const newCalendarData = JSON.parse(JSON.stringify(prevCalendarData)); // Deep copy to ensure immutability
+      const newMonthData = [...newCalendarData[currentYear][currentMonth]];
+
+      // Clear existing assignments for the current month
+      newMonthData.forEach(day => {
+        day.therapists = [];
+      });
+
+      // Distribute therapists
+      for (let i = 0; i < newMonthData.length; i++) {
+        const day = newMonthData[i];
+        const date = day.date;
+        const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'long' });
+
+        const isHoliday = currentBlockedDays.includes(day.dayKey);
+        const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+
+        if (!isHoliday && !isWeekend) {
+          const assignedForDay = [];
+          let assignedCount = 0;
+
+          // Fill the required slots
+          while (assignedCount < dailyTherapistCount && assignedForDay.length < workingTherapists.length) {
+            const therapist = workingTherapists[therapistIndex];
+            const isWfh = workingFromHome[therapist]?.[dayOfWeek] || false;
+
+            if (!isWfh) {
+              assignedForDay.push(therapist);
+              assignedCount++;
+            }
+
+            therapistIndex = (therapistIndex + 1) % workingTherapists.length;
           }
-          return month;
-        }),
-      };
+
+          day.therapists = assignedForDay.sort(() => Math.random() - 0.5);
+        }
+      }
+
+      newCalendarData[currentYear][currentMonth] = newMonthData;
       return newCalendarData;
     });
 
-    setAutoRosterTriggered(true); // Set state to indicate auto-roster was run
-    toast.success("Auto roster has been generated!", { position: "top-center", autoClose: 3000 });
-  }, [calendarData, currentYear, currentMonth, currentBlockedDays, workingFromHome]);
+    toast.success("Auto roster has been generated and updated!", { position: "top-center", autoClose: 3000 });
+  }, [currentYear, currentMonth, currentBlockedDays, workingFromHome]);
 
-  useEffect(() => {
-    if (autoRosterTriggered) {
-      // Re-trigger memoized values when auto roster is done
-      // This is a workaround to force re-evaluation of assignmentCounts
-      // A better solution would be to use a single state object
-      // But this is the quickest fix with the existing structure
-      setCalendarData(prev => ({ ...prev }));
-      setAutoRosterTriggered(false);
-    }
-  }, [autoRosterTriggered, setCalendarData]);
 
   const saveAsPNG = useCallback(() => {
     if (calendarRef.current) {
@@ -1105,15 +1082,6 @@ const App = () => {
                 setCurrentYear={setCurrentYear}
                 changeMonth={changeMonth}
               />
-              <div ref={calendarRef} style={{ flex: 1, overflowY: 'auto' }}>
-                <Calendar
-                  monthDays={calendarData[currentYear][currentMonth]}
-                  moveTherapist={moveTherapist}
-                  removeTherapist={removeTherapist}
-                  todayDate={todayDate}
-                  blockedDaysForYear={currentBlockedDays}
-                />
-              </div>
               <ActionButtons
                 goToToday={goToToday}
                 autoRoster={autoRoster}
@@ -1122,6 +1090,15 @@ const App = () => {
                 downloadCsv={downloadCsv}
                 generateShareLink={generateShareLink}
               />
+              <div ref={calendarRef} style={{ flex: 1, overflowY: 'auto', borderTop: '1px solid #E2E8F0', paddingTop: '20px' }}>
+                <Calendar
+                  monthDays={calendarData[currentYear][currentMonth]}
+                  moveTherapist={moveTherapist}
+                  removeTherapist={removeTherapist}
+                  todayDate={todayDate}
+                  blockedDaysForYear={currentBlockedDays}
+                />
+              </div>
             </>
           )}
           {activeTab === 'patchNotes' && (
