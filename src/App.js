@@ -6,7 +6,7 @@ import html2canvas from 'html2canvas';
 import LZString from 'lz-string';
 
 import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import 'react-toastify/dist/React-Toastify.css';
 
 // --- Utility Data ---
 const therapistGroups = [
@@ -975,13 +975,36 @@ const App = () => {
 
   const downloadCsv = useCallback(() => {
     const monthData = calendarData[currentYear][currentMonth];
-    let csvContent = "Date,Day,Therapists\n";
-
+    let csvContent = "";
+    
+    // Roster Data Section
+    csvContent += "Daily Roster\n";
+    csvContent += "Date,Day,Therapists\n";
+    
     monthData.forEach(day => {
       const dateString = day.date.toLocaleDateString();
       const dayName = day.date.toLocaleDateString('en-US', { weekday: 'long' });
       const assignedTherapists = day.therapists.join(';');
       csvContent += `"${dateString}","${dayName}","${assignedTherapists}"\n`;
+    });
+    
+    // Add an empty line for separation
+    csvContent += "\n";
+    
+    // Shift Summary Section
+    csvContent += "Monthly Shift Summary\n";
+    csvContent += "Therapist,Shifts Assigned\n";
+    
+    const summaryData = therapists.reduce((acc, therapist) => {
+      acc[therapist] = monthData.filter(day => day.therapists.includes(therapist)).length;
+      return acc;
+    }, {});
+    
+    // Sort therapists by shifts assigned (highest to lowest)
+    const sortedTherapists = Object.entries(summaryData).sort(([, a], [, b]) => b - a);
+
+    sortedTherapists.forEach(([therapist, shifts]) => {
+      csvContent += `"${therapist}",${shifts}\n`;
     });
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -994,7 +1017,7 @@ const App = () => {
     link.click();
     document.body.removeChild(link);
     toast.success("CSV file downloaded successfully!", { position: "top-center" });
-  }, [calendarData, currentYear, currentMonth]);
+  }, [calendarData, currentYear, currentMonth, therapists]);
 
   const generateShareLink = useCallback(() => {
     const dataToCompress = {
