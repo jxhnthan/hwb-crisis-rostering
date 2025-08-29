@@ -958,25 +958,53 @@ const App = () => {
     toast.success("Auto roster has been generated and updated!", { position: "top-center", autoClose: 3000 });
 }, [currentYear, currentMonth, currentBlockedDays, workingFromHome]);
 
+const saveAsPNG = useCallback(() => {
+  const calendarElement = calendarRef.current;
+  if (!calendarElement) {
+    toast.error("Calendar element not found!", { position: "top-center" });
+    return;
+  }
 
-  const saveAsPNG = useCallback(() => {
-    if (calendarRef.current) {
-      html2canvas(calendarRef.current, {
-        useCORS: true,
-        scale: 2,
-        windowWidth: calendarRef.current.scrollWidth,
-        windowHeight: calendarRef.current.scrollHeight,
-      }).then(canvas => {
-        const link = document.createElement('a');
-        link.href = canvas.toDataURL('image/png');
-        link.download = `therapist-roster-${currentYear}-${currentMonth + 1}.png`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        toast.success("Calendar saved as PNG!", { position: "top-center" });
+  // Find all calendar days
+  const dayElements = calendarElement.querySelectorAll('.calendar-day');
+
+  // Temporarily adjust day styles to prevent overflow
+  dayElements.forEach(el => {
+    el.style.minHeight = '120px'; // Consistent height for all days
+    el.style.overflow = 'hidden'; // Hide any overflowing text
+  });
+  
+  // Temporarily shrink weekend days to create a cleaner, more compact look
+  const weekendElements = calendarElement.querySelectorAll('.weekend-day');
+  weekendElements.forEach(el => {
+    el.style.minHeight = '60px';
+  });
+
+  // Wait for a brief moment to ensure styles are applied
+  setTimeout(() => {
+    html2canvas(calendarElement, {
+      useCORS: true,
+      scale: 2,
+    }).then(canvas => {
+      const link = document.createElement('a');
+      link.href = canvas.toDataURL('image/png');
+      link.download = `therapist-roster-${currentYear}-${currentMonth + 1}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success("Calendar saved as PNG!", { position: "top-center" });
+
+      // Restore original styles after the screenshot is taken
+      dayElements.forEach(el => {
+        el.style.minHeight = ''; 
+        el.style.overflow = '';
       });
-    }
-  }, [currentYear, currentMonth]);
+      weekendElements.forEach(el => {
+        el.style.minHeight = '';
+      });
+    });
+  }, 100);
+}, [currentYear, currentMonth]);
 
 const downloadCsv = useCallback(() => {
   // Define CSV headers for the summary table
