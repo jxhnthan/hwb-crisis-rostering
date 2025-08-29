@@ -820,41 +820,43 @@ const App = () => {
 
   const moveTherapist = useCallback((name, dayKey) => {
     setCalendarData((prevCalendarData) => {
-      const updatedCalendarData = JSON.parse(JSON.stringify(prevCalendarData));
-      const yearCalendar = updatedCalendarData[currentYear];
-      const monthIndex = yearCalendar.findIndex(month => month.some(day => day.dayKey === dayKey));
-
-      if (monthIndex !== -1) {
-        const dayIndex = yearCalendar[monthIndex].findIndex(day => day.dayKey === dayKey);
+      const updatedYearCalendar = prevCalendarData[currentYear].map((month) => {
+        const dayIndex = month.findIndex(day => day.dayKey === dayKey);
         if (dayIndex !== -1) {
-          const updatedTherapists = [...yearCalendar[monthIndex][dayIndex].therapists, name];
-          yearCalendar[monthIndex][dayIndex] = {
-            ...yearCalendar[monthIndex][dayIndex],
-            therapists: updatedTherapists,
+          const updatedDay = {
+            ...month[dayIndex],
+            therapists: [...month[dayIndex].therapists, name]
           };
+          return month.map((day, idx) => (idx === dayIndex ? updatedDay : day));
         }
-      }
-      return updatedCalendarData;
+        return month;
+      });
+
+      return {
+        ...prevCalendarData,
+        [currentYear]: updatedYearCalendar,
+      };
     });
   }, [currentYear]);
 
   const removeTherapist = useCallback((name, dayKey) => {
     setCalendarData((prevCalendarData) => {
-      const updatedCalendarData = JSON.parse(JSON.stringify(prevCalendarData));
-      const yearCalendar = updatedCalendarData[currentYear];
-      const monthIndex = yearCalendar.findIndex(month => month.some(day => day.dayKey === dayKey));
-
-      if (monthIndex !== -1) {
-        const dayIndex = yearCalendar[monthIndex].findIndex(day => day.dayKey === dayKey);
+      const updatedYearCalendar = prevCalendarData[currentYear].map((month) => {
+        const dayIndex = month.findIndex(day => day.dayKey === dayKey);
         if (dayIndex !== -1) {
-          const updatedTherapists = yearCalendar[monthIndex][dayIndex].therapists.filter(t => t !== name);
-          yearCalendar[monthIndex][dayIndex] = {
-            ...yearCalendar[monthIndex][dayIndex],
-            therapists: updatedTherapists,
+          const updatedDay = {
+            ...month[dayIndex],
+            therapists: month[dayIndex].therapists.filter(t => t !== name)
           };
+          return month.map((day, idx) => (idx === dayIndex ? updatedDay : day));
         }
-      }
-      return updatedCalendarData;
+        return month;
+      });
+
+      return {
+        ...prevCalendarData,
+        [currentYear]: updatedYearCalendar,
+      };
     });
   }, [currentYear]);
 
@@ -906,13 +908,11 @@ const App = () => {
     };
 
     setCalendarData(prevCalendarData => {
-        const newYearCalendar = [...prevCalendarData[currentYear]];
-        const newMonthData = [...newYearCalendar[currentMonth]];
-
-        newMonthData.forEach(day => {
-            day.therapists = [];
-        });
-
+        const newMonthData = prevCalendarData[currentYear][currentMonth].map(day => ({
+            ...day,
+            therapists: [],
+        }));
+        
         for (let i = 0; i < newMonthData.length; i++) {
             const day = newMonthData[i];
             const date = day.date;
@@ -1119,7 +1119,6 @@ const App = () => {
 };
 
 export default App;
-
 
 
 
