@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
@@ -21,7 +21,7 @@ const therapistGroups = [
   {
     role: "Care Manager",
     therapists: [
-    "Dominic Yeo"
+      "Dominic Yeo"
     ]
   }
 ];
@@ -316,6 +316,7 @@ const CalendarDay = React.memo(({ day, moveTherapist, removeTherapist, isToday, 
         boxShadow: boxShadow, display: 'flex', flexDirection: 'column',
         gap: '10px', border: `1px solid ${borderColor}`,
         transition: 'background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+        overflowY: 'auto', // Added to handle overflow of therapist cards
       }}
     >
       <strong
@@ -408,7 +409,7 @@ const Calendar = React.memo(({ monthDays, moveTherapist, removeTherapist, todayD
       </div>
 
       <div style={{
-        display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px',
+        display: 'grid', gridTemplateColumns: 'repeat(7, minmax(150px, 1fr))', gap: '8px', // Changed to minmax for better responsiveness
       }}>
         {Array.from({ length: firstDayOfMonth }).map((_, index) => (
           <div key={`empty-${index}`} style={{
@@ -701,6 +702,8 @@ const App = () => {
   const [activeTab, setActiveTab] = useState('calendar');
   const [liveDateTime, setLiveDateTime] = useState('');
 
+  const calendarRef = useRef(null);
+
   const initialCollapsedRolesState = useMemo(() => (
     therapistGroups.reduce((acc, group) => {
       acc[group.role] = false;
@@ -818,142 +821,197 @@ const App = () => {
 
   const moveTherapist = useCallback((name, dayKey) => {
     setCalendarData((prevCalendarData) => {
-      const updatedCalendarData = { ...prevCalendarData };
-      const yearCalendar = [...updatedCalendarData[currentYear]];
-      const updatedMonth = yearCalendar[currentMonth].map((day) => {
-        if (day.dayKey === dayKey && !currentBlockedDays.includes(dayKey) && !day.therapists.includes(name)) {
-          const dateParts = day.dayKey.split('-');
-          const dateObj = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
-          const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
+      const updatedCalendarData = JSON.parse(JSON.stringify(prevCalendarData)); // Deep copy for immutability
+      const yearCalendar = updatedCalendarData[currentYear];
+      const monthIndex = yearCalendar.findIndex(month => month.some(day => day.dayKey === dayKey));
 
-          if (!isWeekend) {
-            return { ...day, therapists: [...day.therapists, name] };
-          }
+      if (monthIndex !== -1) {
+        const dayIndex = yearCalendar[monthIndex].findIndex(day => day.dayKey === dayKey);
+        if (dayIndex !== -1) {
+          const updatedTherapists = [...yearCalendar[monthIndex][dayIndex].therapists, name];
+          yearCalendar[monthIndex][dayIndex] = {
+            ...yearCalendar[monthIndex][dayIndex],
+            therapists: updatedTherapists,
+          };
         }
-        return day;
-      });
-
-      yearCalendar[currentMonth] = updatedMonth;
-      updatedCalendarData[currentYear] = yearCalendar;
+      }
       return updatedCalendarData;
     });
-  }, [currentYear, currentMonth, currentBlockedDays]);
+  }, [currentYear]);
 
   const removeTherapist = useCallback((name, dayKey) => {
     setCalendarData((prevCalendarData) => {
-      const updatedCalendarData = { ...prevCalendarData };
-      const yearCalendar = [...updatedCalendarData[currentYear]];
-      const updatedMonth = yearCalendar[currentMonth].map((day) => {
-        if (day.dayKey === dayKey) {
-          return { ...day, therapists: day.therapists.filter((therapist) => therapist !== name) };
+      const updatedCalendarData = JSON.parse(JSON.stringify(prevCalendarData)); // Deep copy for immutability
+      const yearCalendar = updatedCalendarData[currentYear];
+      const monthIndex = yearCalendar.findIndex(month => month.some(day => day.dayKey === dayKey));
+
+      if (monthIndex !== -1) {
+        const dayIndex = yearCalendar[monthIndex].findIndex(day => day.dayKey === dayKey);
+        if (dayIndex !== -1) {
+          const updatedTherapists = yearCalendar[monthIndex][dayIndex].therapists.filter(t => t !== name);
+          yearCalendar[monthIndex][dayIndex] = {
+            ...yearCalendar[monthIndex][dayIndex],
+            therapists: updatedTherapists,
+          };
         }
-        return day;
-      });
-      yearCalendar[currentMonth] = updatedMonth;
-      updatedCalendarData[currentYear] = yearCalendar;
+      }
       return updatedCalendarData;
     });
-  }, [currentYear, currentMonth]);
-
-  const resetCalendar = useCallback(() => {
-    setCalendarData({
-      2025: getCalendarForYear(2025),
-      2026: getCalendarForYear(2026),
-    });
-    setWorkingFromHome({
-      "Dominic Yeo": { Monday: false, Tuesday: false, Wednesday: true, Thursday: false, Friday: false },
-      "Kirsty Png": { Monday: false, Tuesday: false, Wednesday: true, Thursday: false, Friday: false },
-      "Soon Jiaying": { Monday: false, Tuesday: false, Wednesday: false, Thursday: false, Friday: true },
-      "Andrew Lim": { Monday: false, Tuesday: false, Wednesday: false, Thursday: false, Friday: true },
-      "Janice Leong": { Monday: false, Tuesday: false, Wednesday: true, Thursday: false, Friday: false },
-      "Oliver Tan": { Monday: false, Tuesday: true, Wednesday: false, Thursday: false, Friday: false },
-      "Claudia Ahl": { Monday: false, Tuesday: false, Wednesday: false, Thursday: true, Friday: false },
-      "Seanna Neo": { Monday: false, Tuesday: true, Wednesday: false, Thursday: false, Friday: false },
-      "Xiao Hui": { Monday: false, Tuesday: false, Wednesday: false, Thursday: true, Friday: false },
-    });
-    setAutoRosterTriggered(false);
-    toast.info("Calendar and WFH settings have been reset!", { position: "top-center", autoClose: 2000 });
-  }, []);
+  }, [currentYear]);
 
   const changeMonth = useCallback((direction) => {
-    setCurrentMonth(prevMonth => {
-      let newMonth = prevMonth;
-      if (direction === 'next') {
-        newMonth = (prevMonth + 1) % 12;
-      } else if (direction === 'prev') {
-        newMonth = (prevMonth - 1 + 12) % 12;
-      }
-      setTodayDate(null); // Clear today's highlight when changing month manually
-      return newMonth;
-    });
-  }, []);
+    let newMonth = currentMonth;
+    let newYear = currentYear;
 
-  const toggleCollapse = useCallback((role) => {
-    setCollapsedRoles(prev => ({
-      ...prev,
-      [role]: !prev[role],
-    }));
-  }, []);
+    if (direction === 'prev') {
+      newMonth--;
+      if (newMonth < 0) {
+        newMonth = 11;
+        newYear--;
+      }
+    } else if (direction === 'next') {
+      newMonth++;
+      if (newMonth > 11) {
+        newMonth = 0;
+        newYear++;
+      }
+    }
+
+    if (newYear < 2025 || newYear > 2026) {
+      toast.error("Roster data is only available for 2025 and 2026.", { position: "top-right", autoClose: 3000 });
+      return;
+    }
+
+    setCurrentMonth(newMonth);
+    setCurrentYear(newYear);
+  }, [currentMonth, currentYear]);
+
+  const resetCalendar = useCallback(() => {
+    if (window.confirm("Are you sure you want to reset the calendar for the selected year and month? This cannot be undone.")) {
+      setCalendarData(prevCalendarData => {
+        const newCalendarData = { ...prevCalendarData };
+        newCalendarData[currentYear] = getCalendarForYear(currentYear);
+        return newCalendarData;
+      });
+      toast.success("Calendar reset successfully!", { position: "top-center" });
+    }
+  }, [currentYear]);
 
   const autoRoster = useCallback(() => {
-    setCalendarData((prevCalendarData) => {
-      const updatedCalendarData = { ...prevCalendarData };
-      const updatedMonth = [...updatedCalendarData[currentYear][currentMonth]];
+    const yearCalendar = [...calendarData[currentYear]];
+    const monthData = yearCalendar[currentMonth];
+    const newMonthData = [...monthData];
 
-      const availableTherapists = [...therapists].filter((therapist) => {
-        const hasWFH = Object.values(workingFromHome[therapist] || {}).some(isWfh => isWfh);
-        const hasAssignedShifts = updatedMonth.some(day => day.therapists.includes(therapist));
-        return hasWFH || !hasAssignedShifts;
-      });
-
-      const dayIndices = Array.from({ length: updatedMonth.length }, (_, i) => i);
-      dayIndices.sort(() => Math.random() - 0.5);
-
-      const therapistQueue = [...therapists];
-
-      for (const dayIndex of dayIndices) {
-        const day = updatedMonth[dayIndex];
-        const isWeekend = day.date.getDay() === 0 || day.date.getDay() === 6;
-        const isBlocked = currentBlockedDays.includes(day.dayKey);
-        const dayOfWeek = day.date.toLocaleString('en-US', { weekday: 'long' });
-
-        if (!day.therapists.length && !isBlocked && !isWeekend) {
-          const therapist = therapistQueue.shift();
-          if (therapist) {
-            day.therapists.push(therapist);
-            therapistQueue.push(therapist);
-          }
-        }
-      }
-
-      updatedCalendarData[currentYear][currentMonth] = updatedMonth;
-      return updatedCalendarData;
+    // Reset current month's assignments
+    newMonthData.forEach(day => {
+      day.therapists = [];
     });
-    setAutoRosterTriggered(true);
-  }, [currentYear, currentMonth, currentBlockedDays, workingFromHome]);
+
+    const dailyTherapistCount = 1;
+    const workingTherapists = therapists;
+
+    let therapistIndex = 0;
+
+    for (let i = 0; i < newMonthData.length; i++) {
+      const day = newMonthData[i];
+      const date = day.date;
+      const dayOfWeek = date.toLocaleString('en-US', { weekday: 'long' });
+
+      const isHoliday = currentBlockedDays.includes(day.dayKey);
+      const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+
+      if (!isHoliday && !isWeekend) {
+        const assignedForDay = [];
+        let assignedCount = 0;
+
+        // Try to fill the required slots
+        while (assignedCount < dailyTherapistCount && assignedForDay.length < workingTherapists.length) {
+          const therapist = workingTherapists[therapistIndex];
+          const isWfh = workingFromHome[therapist]?.[dayOfWeek] || false;
+
+          if (!isWfh) {
+            assignedForDay.push(therapist);
+            assignedCount++;
+          }
+
+          therapistIndex = (therapistIndex + 1) % workingTherapists.length;
+        }
+
+        // Shuffle therapists on this day to avoid static order
+        day.therapists = assignedForDay.sort(() => Math.random() - 0.5);
+      }
+    }
+
+    // Create a new, updated calendar object to trigger re-render
+    setCalendarData(prevCalendarData => {
+      const newCalendarData = {
+        ...prevCalendarData,
+        [currentYear]: prevCalendarData[currentYear].map((month, idx) => {
+          if (idx === currentMonth) {
+            return newMonthData;
+          }
+          return month;
+        }),
+      };
+      return newCalendarData;
+    });
+
+    setAutoRosterTriggered(true); // Set state to indicate auto-roster was run
+    toast.success("Auto roster has been generated!", { position: "top-center", autoClose: 3000 });
+  }, [calendarData, currentYear, currentMonth, currentBlockedDays, workingFromHome]);
+
+  useEffect(() => {
+    if (autoRosterTriggered) {
+      // Re-trigger memoized values when auto roster is done
+      // This is a workaround to force re-evaluation of assignmentCounts
+      // A better solution would be to use a single state object
+      // But this is the quickest fix with the existing structure
+      setCalendarData(prev => ({ ...prev }));
+      setAutoRosterTriggered(false);
+    }
+  }, [autoRosterTriggered, setCalendarData]);
 
   const saveAsPNG = useCallback(() => {
-    const calendarElement = document.getElementById("calendar-container");
-
-    html2canvas(calendarElement, {
-      backgroundColor: "#F0F4F8",
-      useCORS: true,
-      scale: 2,
-    }).then((canvas) => {
-      const imgData = canvas.toDataURL("image/png");
-      const link = document.createElement("a");
-      const monthName = new Date(currentYear, currentMonth, 1).toLocaleString("default", { month: "long" });
-      link.href = imgData;
-      link.download = `Therapist_Roster_${monthName}_${currentYear}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      toast.success("Roster saved as PNG!", { position: "top-center", autoClose: 2000 });
-    }).catch((error) => {
-      console.error("Error generating PNG:", error);
-      toast.error("Failed to save PNG. Please try again.", { position: "top-center", autoClose: 3000 });
-    });
+    if (calendarRef.current) {
+      html2canvas(calendarRef.current, {
+        useCORS: true,
+        scale: 2,
+        windowWidth: calendarRef.current.scrollWidth,
+        windowHeight: calendarRef.current.scrollHeight,
+      }).then(canvas => {
+        const link = document.createElement('a');
+        link.href = canvas.toDataURL('image/png');
+        link.download = `therapist-roster-${currentYear}-${currentMonth + 1}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success("Calendar saved as PNG!", { position: "top-center" });
+      });
+    }
   }, [currentYear, currentMonth]);
+
+  const downloadCsv = useCallback(() => {
+    const monthData = calendarData[currentYear][currentMonth];
+    let csvContent = "Date,Day,Therapists\n";
+
+    monthData.forEach(day => {
+      const dateString = day.date.toLocaleDateString();
+      const dayName = day.date.toLocaleDateString('en-US', { weekday: 'long' });
+      const assignedTherapists = day.therapists.join(';');
+      csvContent += `"${dateString}","${dayName}","${assignedTherapists}"\n`;
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `roster-${currentYear}-${currentMonth + 1}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("CSV file downloaded successfully!", { position: "top-center" });
+  }, [calendarData, currentYear, currentMonth]);
 
   const generateShareLink = useCallback(() => {
     const dataToCompress = {
@@ -961,79 +1019,67 @@ const App = () => {
       workingFromHome,
     };
     const compressedData = compressData(dataToCompress);
-    const baseUrl = window.location.origin + window.location.pathname;
-    const shareUrl = `${baseUrl}?data=${compressedData}`;
-
-    navigator.clipboard.writeText(shareUrl)
+    const url = `${window.location.origin}${window.location.pathname}?data=${compressedData}`;
+    navigator.clipboard.writeText(url)
       .then(() => {
-        toast.success("Shareable link copied to clipboard!", { position: "top-center", autoClose: 3000 });
+        toast.success("Shareable link copied to clipboard!", { position: "top-center" });
       })
-      .catch((error) => {
-        console.error("Failed to copy link:", error);
-        toast.error("Failed to copy link. Please copy it manually.", { position: "top-center", autoClose: 3000 });
+      .catch(err => {
+        console.error("Failed to copy URL: ", err);
+        toast.error("Failed to copy link. Please try again.", { position: "top-center" });
       });
   }, [calendarData, workingFromHome]);
 
-  // --- NEW: Function to download CSV with shift summary ---
-  const downloadCsv = useCallback(() => {
-    const currentMonthData = calendarData[currentYear][currentMonth];
-    const monthName = new Date(currentYear, currentMonth, 1).toLocaleString("default", { month: "long" });
-    const year = currentYear;
-
-    // Create an object to count shifts for each therapist
-    const shiftCounts = {};
-    therapists.forEach(therapist => {
-      shiftCounts[therapist] = 0;
-    });
-
-    // Iterate through the days of the current month and count assignments
-    currentMonthData.forEach(day => {
-      day.therapists.forEach(therapist => {
-        if (shiftCounts.hasOwnProperty(therapist)) {
-          shiftCounts[therapist]++;
-        }
-      });
-    });
-
-    // Create the CSV content string
-    let csvContent = "Therapist,Shifts Assigned\n";
-
-    // Add a row for each therapist with their total shift count
-    therapists.forEach(therapist => {
-      csvContent += `"${therapist}",${shiftCounts[therapist]}\n`;
-    });
-
-    // Create a Blob and URL for the CSV data and trigger the download
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `Therapist_Shift_Summary_${monthName}_${year}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast.success("Shift summary CSV downloaded!", { position: "top-center", autoClose: 2000 });
-  }, [calendarData, currentYear, currentMonth]);
-  // --- END OF NEW FUNCTION ---
+  const toggleCollapse = useCallback((role) => {
+    setCollapsedRoles(prev => ({
+      ...prev,
+      [role]: !prev[role]
+    }));
+  }, []);
 
   return (
     <DndProvider backend={HTML5Backend}>
       <div style={{
-        fontFamily: "'Inter', sans-serif", backgroundColor: '#F0F4F8', minHeight: '100vh',
-        padding: '30px', color: '#1A202C',
-        display: 'flex', gap: '30px',
+        backgroundColor: '#F7FAFC', minHeight: '100vh', padding: '20px',
+        fontFamily: "'Inter', sans-serif", color: '#2D3748',
+        display: 'flex', gap: '20px',
       }}>
         <ToastContainer />
-        
-        {/* Left Sidebar */}
-        <div style={{ flex: '1', minWidth: '300px' }}>
-          <h1 style={{ fontSize: '2rem', marginBottom: '20px', fontWeight: 'bold' }}>SWEE Roster</h1>
-          <div style={{ display: 'flex', marginBottom: '20px' }}>
+        <div style={{
+          width: '300px', flexShrink: 0,
+          display: 'flex', flexDirection: 'column', gap: '20px',
+        }}>
+          <TherapistList
+            therapistGroups={therapistGroups}
+            collapsedRoles={collapsedRoles}
+            toggleCollapse={toggleCollapse}
+          />
+          <WFHTable
+            therapists={therapists}
+            workingFromHome={workingFromHome}
+            setWorkingFromHome={setWorkingFromHome}
+          />
+          <AssignmentTracker
+            therapists={therapists}
+            assignmentCounts={assignmentCounts}
+            averageShiftsPerTherapist={averageShiftsPerTherapist}
+            workingFromHome={workingFromHome}
+          />
+        </div>
+        <div style={{
+          flex: 1, minWidth: 0,
+          display: 'flex', flexDirection: 'column',
+          backgroundColor: '#FFFFFF', padding: '20px', borderRadius: '12px',
+          boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
+        }}>
+          <div style={{
+            display: 'flex', borderBottom: '2px solid #E2E8F0', marginBottom: '20px',
+          }}>
             <button
               style={{
                 ...tabButtonStyle,
-                borderBottom: activeTab === 'calendar' ? '2px solid #3182CE' : '2px solid transparent',
-                color: activeTab === 'calendar' ? '#3182CE' : '#4A5568',
+                borderBottom: activeTab === 'calendar' ? '2px solid #3182CE' : 'none',
+                color: activeTab === 'calendar' ? '#3182CE' : '#718096',
               }}
               onClick={() => setActiveTab('calendar')}
             >
@@ -1042,51 +1088,47 @@ const App = () => {
             <button
               style={{
                 ...tabButtonStyle,
-                borderBottom: activeTab === 'patch-notes' ? '2px solid #3182CE' : '2px solid transparent',
-                color: activeTab === 'patch-notes' ? '#3182CE' : '#4A5568',
+                borderBottom: activeTab === 'patchNotes' ? '2px solid #3182CE' : 'none',
+                color: activeTab === 'patchNotes' ? '#3182CE' : '#718096',
               }}
-              onClick={() => setActiveTab('patch-notes')}
+              onClick={() => setActiveTab('patchNotes')}
             >
               Patch Notes
             </button>
           </div>
-          {activeTab === 'calendar' ? (
+          {activeTab === 'calendar' && (
             <>
-              <TherapistList therapistGroups={therapistGroups} collapsedRoles={collapsedRoles} toggleCollapse={toggleCollapse} />
-              <WFHTable therapists={therapists} workingFromHome={workingFromHome} setWorkingFromHome={setWorkingFromHome} />
-              <AssignmentTracker therapists={therapists} assignmentCounts={assignmentCounts} averageShiftsPerTherapist={averageShiftsPerTherapist} workingFromHome={workingFromHome} />
+              <CalendarControls
+                currentYear={currentYear}
+                currentMonth={currentMonth}
+                liveDateTime={liveDateTime}
+                setCurrentYear={setCurrentYear}
+                changeMonth={changeMonth}
+              />
+              <div ref={calendarRef} style={{ flex: 1, overflowY: 'auto' }}>
+                <Calendar
+                  monthDays={calendarData[currentYear][currentMonth]}
+                  moveTherapist={moveTherapist}
+                  removeTherapist={removeTherapist}
+                  todayDate={todayDate}
+                  blockedDaysForYear={currentBlockedDays}
+                />
+              </div>
+              <ActionButtons
+                goToToday={goToToday}
+                autoRoster={autoRoster}
+                resetCalendar={resetCalendar}
+                saveAsPNG={saveAsPNG}
+                downloadCsv={downloadCsv}
+                generateShareLink={generateShareLink}
+              />
             </>
-          ) : (
-            <PatchNotesSection patchNotes={patchNotes} />
           )}
-        </div>
-
-        {/* Right Calendar Section */}
-        <div style={{ flex: '2', minWidth: '700px', maxWidth: '1200px' }}>
-          <div id="calendar-container" style={{ ...cardStyle, padding: '30px' }}>
-            <CalendarControls
-              currentYear={currentYear}
-              currentMonth={currentMonth}
-              liveDateTime={liveDateTime}
-              setCurrentYear={setCurrentYear}
-              changeMonth={changeMonth}
-            />
-            <Calendar
-              monthDays={calendarData[currentYear][currentMonth]}
-              moveTherapist={moveTherapist}
-              removeTherapist={removeTherapist}
-              todayDate={todayDate}
-              blockedDaysForYear={currentBlockedDays}
-            />
-            <ActionButtons
-              goToToday={goToToday}
-              autoRoster={autoRoster}
-              resetCalendar={resetCalendar}
-              saveAsPNG={saveAsPNG}
-              downloadCsv={downloadCsv}
-              generateShareLink={generateShareLink}
-            />
-          </div>
+          {activeTab === 'patchNotes' && (
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+              <PatchNotesSection patchNotes={patchNotes} />
+            </div>
+          )}
         </div>
       </div>
     </DndProvider>
@@ -1094,8 +1136,6 @@ const App = () => {
 };
 
 export default App;
-
-
 
 
 
