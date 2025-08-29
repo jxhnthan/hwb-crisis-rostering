@@ -973,28 +973,41 @@ const App = () => {
     }
   }, [currentYear, currentMonth]);
 
-  const downloadCsv = useCallback(() => {
-    const monthData = calendarData[currentYear][currentMonth];
-    let csvContent = "Date,Day,Therapists\n";
+const downloadCsv = useCallback(() => {
+  // Define CSV headers for the summary table
+  let csvContent = "Therapist,Assignments\n";
 
-    monthData.forEach(day => {
-      const dateString = day.date.toLocaleDateString();
-      const dayName = day.date.toLocaleDateString('en-US', { weekday: 'long' });
-      const assignedTherapists = day.therapists.join(';');
-      csvContent += `"${dateString}","${dayName}","${assignedTherapists}"\n`;
-    });
+  // Get a sorted list of therapists for consistent output
+  const therapistNames = Object.keys(assignmentCounts).sort();
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `roster-${currentYear}-${currentMonth + 1}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast.success("CSV file downloaded successfully!", { position: "top-center" });
-  }, [calendarData, currentYear, currentMonth]);
+  // Iterate over each therapist and add their total assignments to the CSV
+  therapistNames.forEach(therapist => {
+    const count = assignmentCounts[therapist];
+    // Use quotation marks to handle names with commas
+    csvContent += `"${therapist}",${count}\n`;
+  });
+
+  // Create a Blob from the CSV content
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  
+  // Create a temporary link element to trigger the download
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  const monthName = new Date(currentYear, currentMonth).toLocaleString('en-US', { month: 'long' });
+
+  // Set the download attributes for the file
+  link.setAttribute('href', url);
+  link.setAttribute('download', `roster-summary-${monthName}-${currentYear}.csv`);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+
+  // Programmatically click the link to start the download and then clean up
+  link.click();
+  document.body.removeChild(link);
+
+  // Display a success toast notification
+  toast.success("Summary CSV downloaded successfully!", { position: "top-center" });
+}, [assignmentCounts, currentYear, currentMonth]);
 
   const generateShareLink = useCallback(() => {
     const dataToCompress = {
