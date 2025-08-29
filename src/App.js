@@ -548,7 +548,7 @@ const AssignmentTracker = React.memo(({ therapists, assignmentCounts, averageShi
 
   return (
     <div style={cardStyle}>
-      <h3 style={sectionHeadingStyle}>Therapist Assignment Tracker</h3>
+      <h3 style={sectionHeadingStyle}>Shift Tracker</h3>
       <div style={{
         fontSize: '0.9rem', color: '#718096', marginBottom: '15px', textAlign: 'center'
       }}>
