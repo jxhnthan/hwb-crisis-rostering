@@ -636,7 +636,7 @@ const CalendarControls = React.memo(({ currentYear, currentMonth, liveDateTime, 
   );
 });
 
-const ActionButtons = React.memo(({ goToToday, autoRoster, resetCalendar, saveAsPNG, generateShareLink }) => {
+const ActionButtons = React.memo(({ goToToday, autoRoster, resetCalendar, saveAsPNG, downloadCsv, generateShareLink }) => {
   return (
     <div style={{ marginTop: '30px', display: 'flex', gap: '12px', flexWrap: 'wrap', borderTop: '1px solid #E2E8F0', paddingTop: '20px' }}>
       <button type="button" style={buttonStyle} onClick={goToToday} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}>Today</button>
@@ -651,6 +651,15 @@ const ActionButtons = React.memo(({ goToToday, autoRoster, resetCalendar, saveAs
       </button>
       <button type="button" style={buttonStyle} onClick={resetCalendar} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}>Reset Calendar</button>
       <button type="button" style={buttonStyle} onClick={saveAsPNG} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}>Save as PNG</button>
+      <button
+        type="button"
+        style={buttonStyle}
+        onClick={downloadCsv}
+        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}
+      >
+        Download CSV
+      </button>
       <button
         type="button"
         style={{ ...buttonStyle, backgroundColor: '#3182CE', color: 'white', border: '1px solid #3182CE' }}
@@ -836,11 +845,10 @@ const App = () => {
       const yearCalendar = [...updatedCalendarData[currentYear]];
       const updatedMonth = yearCalendar[currentMonth].map((day) => {
         if (day.dayKey === dayKey) {
-          return { ...day, therapists: day.therapists.filter((t) => t !== name) };
+          return { ...day, therapists: day.therapists.filter((therapist) => therapist !== name) };
         }
         return day;
       });
-
       yearCalendar[currentMonth] = updatedMonth;
       updatedCalendarData[currentYear] = yearCalendar;
       return updatedCalendarData;
@@ -848,11 +856,10 @@ const App = () => {
   }, [currentYear, currentMonth]);
 
   const resetCalendar = useCallback(() => {
-    setCalendarData((prevCalendarData) => ({
-      ...prevCalendarData,
+    setCalendarData({
       2025: getCalendarForYear(2025),
       2026: getCalendarForYear(2026),
-    }));
+    });
     setWorkingFromHome({
       "Dominic Yeo": { Monday: false, Tuesday: false, Wednesday: true, Thursday: false, Friday: false },
       "Kirsty Png": { Monday: false, Tuesday: false, Wednesday: true, Thursday: false, Friday: false },
@@ -865,180 +872,18 @@ const App = () => {
       "Xiao Hui": { Monday: false, Tuesday: false, Wednesday: false, Thursday: true, Friday: false },
     });
     setAutoRosterTriggered(false);
-    toast.info("Calendar settings have been reset!", { position: "top-right", autoClose: 2000 });
+    toast.info("Calendar and WFH settings have been reset!", { position: "top-center", autoClose: 2000 });
   }, []);
 
-  const saveAsPNG = useCallback(() => {
-    const calendarContainer = document.getElementById("calendar-container-content");
-    if (!calendarContainer) {
-      console.error("Calendar container content not found for PNG export.");
-      toast.error("Failed to capture calendar. Please try again.", { position: "bottom-center", autoClose: 3000 });
-      return;
-    }
-
-    toast.info("Generating PNG image...", { position: "bottom-center", autoClose: 1500 }); // Provide immediate feedback
-
-    const style = document.createElement('style');
-    style.id = 'png-export-styles';
-    style.innerHTML = `
-      #calendar-container-content {
-        padding-right: 150px !important;
-        padding-top: 50px !important;
-      }
-      #calendar-container-content h2 .generated-text {
-        font-size: 0.7em !important;
-      }
-    `;
-    document.head.appendChild(style);
-
-    html2canvas(calendarContainer, {
-      backgroundColor: "#FFFFFF",
-      useCORS: true,
-      scale: 2
-    }).then((canvas) => {
-      const imgData = canvas.toDataURL("image/png");
-      const link = document.createElement("a");
-      const currentMonthName = calendarData[currentYear]?.[currentMonth]?.[0]?.date.toLocaleString("default", { month: "long" });
-      link.href = imgData;
-      link.download = `Therapist_Roster_${currentMonthName}_${currentYear}.png`;
-      link.click();
-      toast.success("PNG image saved successfully!", { position: "bottom-center", autoClose: 3000 });
-    }).catch((error) => {
-      console.error("Error generating PNG:", error);
-      toast.error("Error saving PNG image. Please try again.", { position: "bottom-center", autoClose: 3000 });
-    }).finally(() => {
-      const tempStyle = document.getElementById('png-export-styles');
-      if (tempStyle) {
-        tempStyle.remove();
-      }
-    });
-  }, [calendarData, currentYear, currentMonth]);
-
-  const generateShareLink = useCallback(() => {
-    const dataToShare = {
-      calendarData: calendarData,
-      workingFromHome: workingFromHome
-    };
-    const compressedEncodedData = compressData(dataToShare);
-    const shareableUrl = `${window.location.origin}${window.location.pathname}?data=${compressedEncodedData}`;
-
-    navigator.clipboard.writeText(shareableUrl)
-      .then(() => {
-        toast.success("Shareable link copied to clipboard!", {
-          position: "bottom-center",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "light",
-        });
-      })
-      .catch((err) => {
-        console.error("Failed to copy link: ", err);
-        toast.error("Failed to copy link to clipboard.", {
-          position: "bottom-center",
-          autoClose: 5000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "light",
-        });
-      });
-  }, [calendarData, workingFromHome]);
-
-  const autoRoster = useCallback(() => {
-    setCalendarData((prevCalendarData) => {
-      const updatedCalendarData = { ...prevCalendarData };
-      const currentYearCalendar = [...updatedCalendarData[currentYear]];
-      const currentMonthData = [...currentYearCalendar[currentMonth]];
-
-      const monthlyAssignmentCounts = therapists.reduce((acc, t) => ({ ...acc, [t]: 0 }), {});
-
-      let totalPossibleSlots = 0;
-      currentMonthData.forEach(day => {
-        const isWeekend = day.date.getDay() === 0 || day.date.getDay() === 6;
-        if (!currentBlockedDays.includes(day.dayKey) && !isWeekend) {
-          totalPossibleSlots++;
-        }
-      });
-      const targetAverageShifts = Math.max(1, totalPossibleSlots / therapists.length);
-      const LAGGING_THRESHOLD = 2;
-
-      let therapistConsiderationOrder = [...therapists].sort(() => Math.random() - 0.5);
-
-      const newMonthDays = currentMonthData.map((day) => {
-        const newDay = { ...day, therapists: [...day.therapists] };
-        const isWeekend = newDay.date.getDay() === 0 || newDay.date.getDay() === 6;
-        const dayOfWeek = newDay.date.toLocaleString('default', { weekday: 'long' });
-
-        if (
-          newDay.therapists.length === 0 &&
-          !currentBlockedDays.includes(newDay.dayKey) &&
-          !isWeekend
-        ) {
-          let assignedThisDay = false;
-          const availableToday = therapistConsiderationOrder.filter(
-            (t) => !workingFromHome[t]?.[dayOfWeek]
-          );
-
-          if (availableToday.length > 0) {
-            availableToday.sort((a, b) => monthlyAssignmentCounts[a] - monthlyAssignmentCounts[b]);
-            const currentAssignedValues = Object.values(monthlyAssignmentCounts).filter(c => c > 0);
-            const currentAverage = currentAssignedValues.length > 0
-              ? currentAssignedValues.reduce((sum, val) => sum + val, 0) / currentAssignedValues.length
-              : 0;
-
-            let therapistToAssign = null;
-            const laggingAndAvailable = availableToday.filter(
-              (t) => monthlyAssignmentCounts[t] < Math.max(1, currentAverage - LAGGING_THRESHOLD / 2) ||
-                monthlyAssignmentCounts[t] < Math.max(1, targetAverageShifts - LAGGING_THRESHOLD)
-            );
-
-            laggingAndAvailable.sort((a, b) => monthlyAssignmentCounts[a] - monthlyAssignmentCounts[b]);
-
-            if (laggingAndAvailable.length > 0) {
-              therapistToAssign = laggingAndAvailable[0];
-            } else {
-              if (availableToday.length > 0) {
-                therapistToAssign = availableToday[0];
-              }
-            }
-
-            if (therapistToAssign) {
-              newDay.therapists = [therapistToAssign];
-              monthlyAssignmentCounts[therapistToAssign]++;
-              therapistConsiderationOrder = [
-                ...therapistConsiderationOrder.filter(t => t !== therapistToAssign),
-                therapistToAssign
-              ];
-              assignedThisDay = true;
-            }
-          }
-        }
-        return newDay;
-      });
-
-      currentYearCalendar[currentMonth] = newMonthDays;
-      updatedCalendarData[currentYear] = currentYearCalendar;
-      return updatedCalendarData;
-    });
-    setAutoRosterTriggered(true);
-    toast.success("Auto Roster completed!", { position: "top-right", autoClose: 2000 });
-  }, [currentYear, currentMonth, currentBlockedDays, workingFromHome]);
-
   const changeMonth = useCallback((direction) => {
-    setCurrentMonth((prevMonth) => {
+    setCurrentMonth(prevMonth => {
       let newMonth = prevMonth;
       if (direction === 'next') {
         newMonth = (prevMonth + 1) % 12;
       } else if (direction === 'prev') {
         newMonth = (prevMonth - 1 + 12) % 12;
       }
-      setTodayDate(null);
+      setTodayDate(null); // Clear today's highlight when changing month manually
       return newMonth;
     });
   }, []);
@@ -1046,105 +891,201 @@ const App = () => {
   const toggleCollapse = useCallback((role) => {
     setCollapsedRoles(prev => ({
       ...prev,
-      [role]: !prev[role]
+      [role]: !prev[role],
     }));
   }, []);
+
+  const autoRoster = useCallback(() => {
+    setCalendarData((prevCalendarData) => {
+      const updatedCalendarData = { ...prevCalendarData };
+      const updatedMonth = [...updatedCalendarData[currentYear][currentMonth]];
+
+      const availableTherapists = [...therapists].filter((therapist) => {
+        const hasWFH = Object.values(workingFromHome[therapist] || {}).some(isWfh => isWfh);
+        const hasAssignedShifts = updatedMonth.some(day => day.therapists.includes(therapist));
+        return hasWFH || !hasAssignedShifts;
+      });
+
+      const dayIndices = Array.from({ length: updatedMonth.length }, (_, i) => i);
+      dayIndices.sort(() => Math.random() - 0.5);
+
+      const therapistQueue = [...therapists];
+
+      for (const dayIndex of dayIndices) {
+        const day = updatedMonth[dayIndex];
+        const isWeekend = day.date.getDay() === 0 || day.date.getDay() === 6;
+        const isBlocked = currentBlockedDays.includes(day.dayKey);
+        const dayOfWeek = day.date.toLocaleString('en-US', { weekday: 'long' });
+
+        if (!day.therapists.length && !isBlocked && !isWeekend) {
+          const therapist = therapistQueue.shift();
+          if (therapist) {
+            day.therapists.push(therapist);
+            therapistQueue.push(therapist);
+          }
+        }
+      }
+
+      updatedCalendarData[currentYear][currentMonth] = updatedMonth;
+      return updatedCalendarData;
+    });
+    setAutoRosterTriggered(true);
+  }, [currentYear, currentMonth, currentBlockedDays, workingFromHome]);
+
+  const saveAsPNG = useCallback(() => {
+    const calendarElement = document.getElementById("calendar-container");
+
+    html2canvas(calendarElement, {
+      backgroundColor: "#F0F4F8",
+      useCORS: true,
+      scale: 2,
+    }).then((canvas) => {
+      const imgData = canvas.toDataURL("image/png");
+      const link = document.createElement("a");
+      const monthName = new Date(currentYear, currentMonth, 1).toLocaleString("default", { month: "long" });
+      link.href = imgData;
+      link.download = `Therapist_Roster_${monthName}_${currentYear}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success("Roster saved as PNG!", { position: "top-center", autoClose: 2000 });
+    }).catch((error) => {
+      console.error("Error generating PNG:", error);
+      toast.error("Failed to save PNG. Please try again.", { position: "top-center", autoClose: 3000 });
+    });
+  }, [currentYear, currentMonth]);
+
+  const generateShareLink = useCallback(() => {
+    const dataToCompress = {
+      calendarData,
+      workingFromHome,
+    };
+    const compressedData = compressData(dataToCompress);
+    const baseUrl = window.location.origin + window.location.pathname;
+    const shareUrl = `${baseUrl}?data=${compressedData}`;
+
+    navigator.clipboard.writeText(shareUrl)
+      .then(() => {
+        toast.success("Shareable link copied to clipboard!", { position: "top-center", autoClose: 3000 });
+      })
+      .catch((error) => {
+        console.error("Failed to copy link:", error);
+        toast.error("Failed to copy link. Please copy it manually.", { position: "top-center", autoClose: 3000 });
+      });
+  }, [calendarData, workingFromHome]);
+
+  // --- NEW: Function to download CSV with shift summary ---
+  const downloadCsv = useCallback(() => {
+    const currentMonthData = calendarData[currentYear][currentMonth];
+    const monthName = new Date(currentYear, currentMonth, 1).toLocaleString("default", { month: "long" });
+    const year = currentYear;
+
+    // Create an object to count shifts for each therapist
+    const shiftCounts = {};
+    therapists.forEach(therapist => {
+      shiftCounts[therapist] = 0;
+    });
+
+    // Iterate through the days of the current month and count assignments
+    currentMonthData.forEach(day => {
+      day.therapists.forEach(therapist => {
+        if (shiftCounts.hasOwnProperty(therapist)) {
+          shiftCounts[therapist]++;
+        }
+      });
+    });
+
+    // Create the CSV content string
+    let csvContent = "Therapist,Shifts Assigned\n";
+
+    // Add a row for each therapist with their total shift count
+    therapists.forEach(therapist => {
+      csvContent += `"${therapist}",${shiftCounts[therapist]}\n`;
+    });
+
+    // Create a Blob and URL for the CSV data and trigger the download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Therapist_Shift_Summary_${monthName}_${year}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("Shift summary CSV downloaded!", { position: "top-center", autoClose: 2000 });
+  }, [calendarData, currentYear, currentMonth]);
+  // --- END OF NEW FUNCTION ---
 
   return (
     <DndProvider backend={HTML5Backend}>
       <div style={{
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"',
-        padding: '20px', backgroundColor: '#F9FAFB', minHeight: '100vh',
+        fontFamily: "'Inter', sans-serif", backgroundColor: '#F0F4F8', minHeight: '100vh',
+        padding: '30px', color: '#1A202C',
+        display: 'flex', gap: '30px',
       }}>
         <ToastContainer />
-
-        <div style={{
-          display: 'flex', gap: '30px', maxWidth: '1800px', margin: '0 auto',
-        }}>
-
-          {/* Left Sidebar */}
-          <div style={{
-            flex: '0 0 400px', display: 'flex', flexDirection: 'column', gap: '20px'
-          }}>
-            <TherapistList
-              therapistGroups={therapistGroups}
-              collapsedRoles={collapsedRoles}
-              toggleCollapse={toggleCollapse}
-            />
-            <WFHTable
-              therapists={therapists}
-              workingFromHome={workingFromHome}
-              setWorkingFromHome={setWorkingFromHome}
-            />
-            <AssignmentTracker
-              therapists={therapists}
-              assignmentCounts={assignmentCounts}
-              averageShiftsPerTherapist={averageShiftsPerTherapist}
-              workingFromHome={workingFromHome}
-            />
+        
+        {/* Left Sidebar */}
+        <div style={{ flex: '1', minWidth: '300px' }}>
+          <h1 style={{ fontSize: '2rem', marginBottom: '20px', fontWeight: 'bold' }}>SWEE Roster</h1>
+          <div style={{ display: 'flex', marginBottom: '20px' }}>
+            <button
+              style={{
+                ...tabButtonStyle,
+                borderBottom: activeTab === 'calendar' ? '2px solid #3182CE' : '2px solid transparent',
+                color: activeTab === 'calendar' ? '#3182CE' : '#4A5568',
+              }}
+              onClick={() => setActiveTab('calendar')}
+            >
+              Calendar
+            </button>
+            <button
+              style={{
+                ...tabButtonStyle,
+                borderBottom: activeTab === 'patch-notes' ? '2px solid #3182CE' : '2px solid transparent',
+                color: activeTab === 'patch-notes' ? '#3182CE' : '#4A5568',
+              }}
+              onClick={() => setActiveTab('patch-notes')}
+            >
+              Patch Notes
+            </button>
           </div>
+          {activeTab === 'calendar' ? (
+            <>
+              <TherapistList therapistGroups={therapistGroups} collapsedRoles={collapsedRoles} toggleCollapse={toggleCollapse} />
+              <WFHTable therapists={therapists} workingFromHome={workingFromHome} setWorkingFromHome={setWorkingFromHome} />
+              <AssignmentTracker therapists={therapists} assignmentCounts={assignmentCounts} averageShiftsPerTherapist={averageShiftsPerTherapist} workingFromHome={workingFromHome} />
+            </>
+          ) : (
+            <PatchNotesSection patchNotes={patchNotes} />
+          )}
+        </div>
 
-          {/* Main Content Area */}
-          <div style={{
-            flex: '1', backgroundColor: '#FFFFFF', padding: '25px',
-            borderRadius: '12px', boxShadow: '0 6px 18px rgba(0,0,0,0.07)',
-          }}>
-            {/* Tab Navigation Buttons */}
-            <div style={{ display: 'flex', marginBottom: '25px', borderBottom: '1px solid #E2E8F0' }}>
-              <button
-                onClick={() => setActiveTab('calendar')}
-                style={{
-                  ...tabButtonStyle,
-                  borderBottom: activeTab === 'calendar' ? '2px solid #3182CE' : 'none',
-                  color: activeTab === 'calendar' ? '#3182CE' : '#4A5568',
-                }}
-              >
-                Calendar
-              </button>
-              <button
-                onClick={() => setActiveTab('patchNotes')}
-                style={{
-                  ...tabButtonStyle,
-                  borderBottom: activeTab === 'patchNotes' ? '2px solid #3182CE' : 'none',
-                  color: activeTab === 'patchNotes' ? '#3182CE' : '#4A5568',
-                }}
-              >
-                Patch Notes
-              </button>
-            </div>
-
-            {/* Conditional Rendering based on activeTab */}
-            {activeTab === 'calendar' && (
-              <>
-                <div id="calendar-container-content">
-                  <CalendarControls
-                    currentYear={currentYear}
-                    currentMonth={currentMonth}
-                    liveDateTime={liveDateTime}
-                    setCurrentYear={setCurrentYear}
-                    changeMonth={changeMonth}
-                  />
-                  <Calendar
-                    monthDays={calendarData[currentYear][currentMonth]}
-                    moveTherapist={moveTherapist}
-                    removeTherapist={removeTherapist}
-                    todayDate={todayDate}
-                    blockedDaysForYear={currentBlockedDays}
-                  />
-                </div>
-                <ActionButtons
-                  goToToday={goToToday}
-                  autoRoster={autoRoster}
-                  resetCalendar={resetCalendar}
-                  saveAsPNG={saveAsPNG}
-                  generateShareLink={generateShareLink}
-                />
-              </>
-            )}
-
-            {activeTab === 'patchNotes' && (
-              <PatchNotesSection patchNotes={patchNotes} />
-            )}
+        {/* Right Calendar Section */}
+        <div style={{ flex: '2', minWidth: '700px', maxWidth: '1200px' }}>
+          <div id="calendar-container" style={{ ...cardStyle, padding: '30px' }}>
+            <CalendarControls
+              currentYear={currentYear}
+              currentMonth={currentMonth}
+              liveDateTime={liveDateTime}
+              setCurrentYear={setCurrentYear}
+              changeMonth={changeMonth}
+            />
+            <Calendar
+              monthDays={calendarData[currentYear][currentMonth]}
+              moveTherapist={moveTherapist}
+              removeTherapist={removeTherapist}
+              todayDate={todayDate}
+              blockedDaysForYear={currentBlockedDays}
+            />
+            <ActionButtons
+              goToToday={goToToday}
+              autoRoster={autoRoster}
+              resetCalendar={resetCalendar}
+              saveAsPNG={saveAsPNG}
+              downloadCsv={downloadCsv}
+              generateShareLink={generateShareLink}
+            />
           </div>
         </div>
       </div>
