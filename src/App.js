@@ -643,35 +643,114 @@ const CalendarControls = React.memo(({ currentYear, currentMonth, liveDateTime, 
 });
 
 const ActionButtons = React.memo(({ goToToday, autoRoster, resetCalendar, saveAsPNG, downloadCsv, generateShareLink }) => {
+
+  // New, standardized style objects
+  const buttonStyle = {
+    padding: '10px 18px',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontWeight: '500',
+    transition: 'background-color 0.2s, color 0.2s, border 0.2s',
+    boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+    border: '1px solid',
+  };
+
+  const primaryBtn = {
+    ...buttonStyle,
+    backgroundColor: '#3182CE', // Blue
+    color: 'white',
+    borderColor: '#3182CE',
+    onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#2B6CB0',
+    onMouseLeave: (e) => e.currentTarget.style.backgroundColor = '#3182CE',
+  };
+
+  const dangerBtn = {
+    ...buttonStyle,
+    backgroundColor: '#E53E3E', // Red
+    color: 'white',
+    borderColor: '#E53E3E',
+    onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#C53030',
+    onMouseLeave: (e) => e.currentTarget.style.backgroundColor = '#E53E3E',
+  };
+
+  const successBtn = {
+    ...buttonStyle,
+    backgroundColor: '#38A169', // Green
+    color: 'white',
+    borderColor: '#38A169',
+    onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#2F855A',
+    onMouseLeave: (e) => e.currentTarget.style.backgroundColor = '#38A169',
+  };
+
+  const neutralBtn = {
+    ...buttonStyle,
+    backgroundColor: '#F7FAFC', // Light Gray
+    color: '#4A5568',
+    borderColor: '#CBD5E0',
+    onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#EDF2F7',
+    onMouseLeave: (e) => e.currentTarget.style.backgroundColor = '#F7FAFC',
+  };
+
   return (
     <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '20px' }}>
-      <button type="button" style={buttonStyle} onClick={goToToday} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}>Today</button>
+      {/* Primary Action */}
       <button
         type="button"
-        style={{ ...buttonStyle, backgroundColor: '#38A169', color: 'white', border: '1px solid #38A169' }}
+        style={primaryBtn}
         onClick={autoRoster}
-        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#2F855A'; }}
-        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#38A169'; }}
+        onMouseEnter={primaryBtn.onMouseEnter}
+        onMouseLeave={primaryBtn.onMouseLeave}
       >
         Auto Roster
       </button>
-      <button type="button" style={buttonStyle} onClick={resetCalendar} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}>Reset Calendar</button>
-      <button type="button" style={buttonStyle} onClick={saveAsPNG} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}>Save as PNG</button>
+
+      {/* Danger/Warning Action */}
       <button
         type="button"
-        style={buttonStyle}
-        onClick={downloadCsv}
-        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }}
-        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}
+        style={dangerBtn}
+        onClick={resetCalendar}
+        onMouseEnter={dangerBtn.onMouseEnter}
+        onMouseLeave={dangerBtn.onMouseLeave}
       >
-        Download CSV
+        Reset Calendar
+      </button>
+
+      {/* Success Actions */}
+      <button
+        type="button"
+        style={successBtn}
+        onClick={goToToday}
+        onMouseEnter={successBtn.onMouseEnter}
+        onMouseLeave={successBtn.onMouseLeave}
+      >
+        Today
       </button>
       <button
         type="button"
-        style={{ ...buttonStyle, backgroundColor: '#3182CE', color: 'white', border: '1px solid #3182CE' }}
+        style={successBtn}
+        onClick={downloadCsv}
+        onMouseEnter={successBtn.onMouseEnter}
+        onMouseLeave={successBtn.onMouseLeave}
+      >
+        Download CSV
+      </button>
+
+      {/* Neutral/Utility Actions */}
+      <button
+        type="button"
+        style={neutralBtn}
+        onClick={saveAsPNG}
+        onMouseEnter={neutralBtn.onMouseEnter}
+        onMouseLeave={neutralBtn.onMouseLeave}
+      >
+        Save as PNG
+      </button>
+      <button
+        type="button"
+        style={neutralBtn}
         onClick={generateShareLink}
-        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#2B6CB0'; }}
-        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#3182CE'; }}
+        onMouseEnter={neutralBtn.onMouseEnter}
+        onMouseLeave={neutralBtn.onMouseLeave}
       >
         Share Link
       </button>
