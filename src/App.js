@@ -556,7 +556,8 @@ const AssignmentTracker = React.memo(({ therapists, assignmentCounts, averageShi
       </div>
       <div style={{ overflowX: 'auto' }}>
         <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px',
+          // Change this line to define a fixed 3-column grid
+          display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px',
         }}>
           {sortedTherapists.map((therapist) => {
             const count = assignmentCounts[therapist] || 0;
