@@ -6,15 +6,15 @@ import html2canvas from 'html2canvas';
 
 // Define therapist names
 const therapists = [
-  "Dominic Yeo", "Kirsty Png", "Soon Jiaying", 
+  "Dominic Yeo", "Kirsty Png", "Soon Jiaying",
   "Andrew Lim", "Janice Leong", "Oliver Tan"
 ];
 
 // Blocked days (in YYYY-MM-DD format)
 const blockedDays = [
-  "2025-1-1", "2025-1-29", "2025-1-30", 
-  "2025-3-31", "2025-4-18", "2025-5-1", 
-  "2025-5-12", "2025-6-7", "2025-8-9", 
+  "2025-1-1", "2025-1-29", "2025-1-30",
+  "2025-3-31", "2025-4-18", "2025-5-1",
+  "2025-5-12", "2025-6-7", "2025-8-9",
   "2025-3-28", "2025-10-25", "2025-10-21",
   "2025-10-20", "2025-12-25"
 ];
@@ -24,7 +24,7 @@ const get2025Calendar = () => {
   const months = [
     [31, 'January'], [28, 'February'], [31, 'March'], [30, 'April'],
     [31, 'May'], [30, 'June'], [31, 'July'], [31, 'August'],
-    [30, 'September'], [31, 'October'], [30, 'November'], [31, 'December']
+    [30, 'September'], [31, 'October'], [31, 'November'], [31, 'December']
   ];
 
   const calendar = months.map(([days, month], monthIndex) => {
@@ -42,8 +42,6 @@ const get2025Calendar = () => {
 
   return calendar;
 };
-
-const calendarData = get2025Calendar(); // Initialize full 2025 calendar
 
 // Therapist Component (Draggable)
 const Therapist = ({ name }) => {
@@ -92,9 +90,9 @@ const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked }
         padding: '10px',
         minHeight: '80px',
         position: 'relative',
-        backgroundColor: isToday 
+        backgroundColor: isToday
           ? '#FFEB3B' // Highlight today
-          : finalBlockedStatus 
+          : finalBlockedStatus
           ? '#B0BEC5' // Solid grey for blocked days
           : 'white', // Normal color for non-blocked days
         borderRadius: '0px', // Rounded corners
@@ -238,7 +236,7 @@ const App = () => {
 
     html2canvas(calendarContainer, {
       backgroundColor: "white", // Ensure a white background for the calendar
-      useCORS: true,           // Allow cross-origin images to be included
+      useCORS: true,            // Allow cross-origin images to be included
       scale: 2                 // Higher resolution for better image quality
     }).then((canvas) => {
       const imgData = canvas.toDataURL("image/png");
@@ -293,6 +291,47 @@ const App = () => {
     setAutoRosterTriggered(true);
   };
 
+  // New function to download the current month's shift summary as a CSV file
+  const downloadCsv = () => {
+    const currentMonthData = calendar[currentMonth];
+    const monthName = currentMonthData[0].date.toLocaleString("default", { month: "long" });
+    const year = currentMonthData[0].date.getFullYear();
+
+    // Create an object to count shifts for each therapist
+    const shiftCounts = {};
+    therapists.forEach(therapist => {
+      shiftCounts[therapist] = 0;
+    });
+
+    // Count the shifts for each therapist in the current month
+    currentMonthData.forEach(day => {
+      day.therapists.forEach(therapist => {
+        if (shiftCounts[therapist] !== undefined) {
+          shiftCounts[therapist]++;
+        }
+      });
+    });
+
+    // Create the CSV content
+    const headers = ["Therapist", "Shifts Assigned"];
+    const csvRows = [headers.join(',')];
+
+    // Add a row for each therapist
+    for (const therapist in shiftCounts) {
+      csvRows.push(`"${therapist}",${shiftCounts[therapist]}`);
+    }
+
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Therapist_Shift_Summary_${monthName}_${year}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const buttonStyle = {
     padding: '8px 16px',
     background: '#f4f4f7',
@@ -326,42 +365,42 @@ const App = () => {
           ))}
           
           <div style={{ marginTop: '20px' }}>
-  <h3>Set Working from Home Days</h3>
-  <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-    <thead>
-      <tr>
-        <th style={{ border: '1px solid #ccc', padding: '8px' }}>Therapist</th>
-        {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => (
-          <th key={day} style={{ border: '1px solid #ccc', padding: '8px' }}>{day}</th>
-        ))}
-      </tr>
-    </thead>
-    <tbody>
-      {therapists.map((therapist) => (
-        <tr key={therapist}>
-          <td style={{ border: '1px solid #ccc', padding: '8px' }}>{therapist}</td>
-          {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => (
-            <td key={day} style={{ border: '1px solid #ccc', padding: '8px', textAlign: 'center' }}>
-              <input
-                type="checkbox"
-                checked={workingFromHome[therapist][day]}
-                onChange={() =>
-                  setWorkingFromHome((prev) => ({
-                    ...prev,
-                    [therapist]: {
-                      ...prev[therapist],
-                      [day]: !prev[therapist][day],
-                    },
-                  }))
-                }
-              />
-            </td>
-          ))}
-        </tr>
-      ))}
-    </tbody>
-  </table>
-</div>
+            <h3>Set Working from Home Days</h3>
+            <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+              <thead>
+                <tr>
+                  <th style={{ border: '1px solid #ccc', padding: '8px' }}>Therapist</th>
+                  {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => (
+                    <th key={day} style={{ border: '1px solid #ccc', padding: '8px' }}>{day}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {therapists.map((therapist) => (
+                  <tr key={therapist}>
+                    <td style={{ border: '1px solid #ccc', padding: '8px' }}>{therapist}</td>
+                    {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => (
+                      <td key={day} style={{ border: '1px solid #ccc', padding: '8px', textAlign: 'center' }}>
+                        <input
+                          type="checkbox"
+                          checked={workingFromHome[therapist][day]}
+                          onChange={() =>
+                            setWorkingFromHome((prev) => ({
+                              ...prev,
+                              [therapist]: {
+                                ...prev[therapist],
+                                [day]: !prev[therapist][day],
+                              },
+                            }))
+                          }
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* Calendar */}
@@ -382,36 +421,42 @@ const App = () => {
             Next
           </button>
 
-          <Calendar 
-            monthDays={calendar[currentMonth]} 
-            moveTherapist={moveTherapist} 
-            removeTherapist={removeTherapist} 
+          <Calendar
+            monthDays={calendar[currentMonth]}
+            moveTherapist={moveTherapist}
+            removeTherapist={removeTherapist}
             todayDate={todayDate}
           />
           <div style={{ marginTop: '20px' }}>
-            <button 
-              style={buttonStyle} 
+            <button
+              style={buttonStyle}
               onClick={goToToday}
             >
               Today
             </button>
-            <button 
-              style={buttonStyle} 
+            <button
+              style={buttonStyle}
               onClick={autoRoster}
             >
               Auto Roster
             </button>
-            <button 
-              style={buttonStyle} 
+            <button
+              style={buttonStyle}
               onClick={resetCalendar}
             >
               Reset Calendar
             </button>
-            <button 
-              style={buttonStyle} 
+            <button
+              style={buttonStyle}
               onClick={saveAsPNG}
             >
               Save as PNG
+            </button>
+            <button
+              style={buttonStyle}
+              onClick={downloadCsv}
+            >
+              Download CSV
             </button>
           </div>
         </div>
@@ -421,6 +466,7 @@ const App = () => {
 };
 
 export default App;
+
 
 
 
