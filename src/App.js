@@ -901,51 +901,57 @@ const App = () => {
     const workingTherapists = therapists;
     let therapistIndex = 0;
 
+    const getDayName = (dayIndex) => {
+        return ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][dayIndex];
+    };
+
     setCalendarData(prevCalendarData => {
-      const newCalendarData = JSON.parse(JSON.stringify(prevCalendarData)); // Deep copy to ensure immutability
-      const newMonthData = [...newCalendarData[currentYear][currentMonth]];
+        const newYearCalendar = [...prevCalendarData[currentYear]];
+        const newMonthData = [...newYearCalendar[currentMonth]];
 
-      // Clear existing assignments for the current month
-      newMonthData.forEach(day => {
-        day.therapists = [];
-      });
+        newMonthData.forEach(day => {
+            day.therapists = [];
+        });
 
-      // Distribute therapists
-      for (let i = 0; i < newMonthData.length; i++) {
-        const day = newMonthData[i];
-        const date = day.date;
-        const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'long' });
+        for (let i = 0; i < newMonthData.length; i++) {
+            const day = newMonthData[i];
+            const date = day.date;
+            const dayOfWeek = getDayName(date.getDay());
 
-        const isHoliday = currentBlockedDays.includes(day.dayKey);
-        const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+            const isHoliday = currentBlockedDays.includes(day.dayKey);
+            const isWeekend = date.getDay() === 0 || date.getDay() === 6;
 
-        if (!isHoliday && !isWeekend) {
-          const assignedForDay = [];
-          let assignedCount = 0;
+            if (!isHoliday && !isWeekend) {
+                const assignedForDay = [];
+                let assignedCount = 0;
 
-          // Fill the required slots
-          while (assignedCount < dailyTherapistCount && assignedForDay.length < workingTherapists.length) {
-            const therapist = workingTherapists[therapistIndex];
-            const isWfh = workingFromHome[therapist]?.[dayOfWeek] || false;
+                while (assignedCount < dailyTherapistCount && assignedForDay.length < workingTherapists.length) {
+                    const therapist = workingTherapists[therapistIndex];
+                    const isWfh = workingFromHome[therapist]?.[dayOfWeek] || false;
 
-            if (!isWfh) {
-              assignedForDay.push(therapist);
-              assignedCount++;
+                    if (!isWfh) {
+                        assignedForDay.push(therapist);
+                        assignedCount++;
+                    }
+
+                    therapistIndex = (therapistIndex + 1) % workingTherapists.length;
+                }
+                day.therapists = assignedForDay.sort(() => Math.random() - 0.5);
             }
-
-            therapistIndex = (therapistIndex + 1) % workingTherapists.length;
-          }
-
-          day.therapists = assignedForDay.sort(() => Math.random() - 0.5);
         }
-      }
+        
+        const updatedYearCalendar = prevCalendarData[currentYear].map((month, idx) =>
+            idx === currentMonth ? newMonthData : month
+        );
 
-      newCalendarData[currentYear][currentMonth] = newMonthData;
-      return newCalendarData;
+        return {
+            ...prevCalendarData,
+            [currentYear]: updatedYearCalendar,
+        };
     });
 
     toast.success("Auto roster has been generated and updated!", { position: "top-center", autoClose: 3000 });
-  }, [currentYear, currentMonth, currentBlockedDays, workingFromHome]);
+}, [currentYear, currentMonth, currentBlockedDays, workingFromHome]);
 
 
   const saveAsPNG = useCallback(() => {
