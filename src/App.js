@@ -484,41 +484,43 @@ const WFHTable = React.memo(({ therapists, workingFromHome, setWorkingFromHome }
   return (
     <div style={cardStyle}>
       <h3 style={sectionHeadingStyle}>Set Blocked Days</h3>
-      <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: '0.9rem' }}>
-        <thead>
-          <tr>
-            <th style={tableHeaderStyle}>Therapist</th>
-            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map((day) => (
-              <th key={day} style={tableHeaderStyle}>{day}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {therapists.map((therapist) => (
-            <tr key={therapist}>
-              <td style={{ ...tableCellStyle, textAlign: 'left', fontWeight: '500' }}>{therapist}</td>
-              {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => (
-                <td key={day} style={tableCellStyle}>
-                  <input
-                    type="checkbox"
-                    style={{ cursor: 'pointer' }}
-                    checked={workingFromHome[therapist]?.[day] || false}
-                    onChange={() =>
-                      setWorkingFromHome((prev) => ({
-                        ...prev,
-                        [therapist]: {
-                          ...prev[therapist],
-                          [day]: !prev[therapist]?.[day],
-                        },
-                      }))
-                    }
-                  />
-                </td>
+      <div style={{ overflowX: 'auto' }}> {/* Add this wrapper div */}
+        <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: '0.9rem' }}>
+          <thead>
+            <tr>
+              <th style={tableHeaderStyle}>Therapist</th>
+              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map((day) => (
+                <th key={day} style={tableHeaderStyle}>{day}</th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {therapists.map((therapist) => (
+              <tr key={therapist}>
+                <td style={{ ...tableCellStyle, textAlign: 'left', fontWeight: '500' }}>{therapist}</td>
+                {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => (
+                  <td key={day} style={tableCellStyle}>
+                    <input
+                      type="checkbox"
+                      style={{ cursor: 'pointer' }}
+                      checked={workingFromHome[therapist]?.[day] || false}
+                      onChange={() =>
+                        setWorkingFromHome((prev) => ({
+                          ...prev,
+                          [therapist]: {
+                            ...prev[therapist],
+                            [day]: !prev[therapist]?.[day],
+                          },
+                        }))
+                      }
+                    />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 });
@@ -535,8 +537,8 @@ const AssignmentTracker = React.memo(({ therapists, assignmentCounts, averageShi
 
   const sortedTherapists = useMemo(() => {
     return [...therapists].sort((a, b) => {
-      const countA = assignmentCounts[a];
-      const countB = assignmentCounts[b];
+      const countA = assignmentCounts[a] || 0;
+      const countB = assignmentCounts[b] || 0;
       if (countA !== countB) {
         return countA - countB;
       }
@@ -552,42 +554,44 @@ const AssignmentTracker = React.memo(({ therapists, assignmentCounts, averageShi
       }}>
         Monthly Average: <strong>{averageShiftsPerTherapist}</strong> shifts per therapist
       </div>
-      <div style={{
-        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px',
-      }}>
-        {sortedTherapists.map((therapist) => {
-          const count = assignmentCounts[therapist];
-          const assignmentColor = getColorForAssignmentCount(count);
-          const therapistWfhDays = Object.entries(workingFromHome[therapist] || {})
-            .filter(([, isWfh]) => isWfh)
-            .map(([day]) => day.substring(0, 3));
-          return (
-            <div
-              key={therapist}
-              style={{
-                padding: '12px', backgroundColor: '#F7FAFC', color: '#234E52',
-                borderRadius: '6px', fontSize: '0.9rem',
-                border: `1px solid ${assignmentColor}`, boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-                display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
-                gap: '6px', position: 'relative'
-              }}
-            >
-              <strong style={{ display: 'block' }}>{therapist}</strong>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>Assigned: {count}</span>
-                <span style={{
-                  width: '10px', height: '10px', borderRadius: '50%',
-                  backgroundColor: assignmentColor, display: 'inline-block', flexShrink: 0,
-                }} title={`Assignment Status: ${count} shifts`}></span>
-              </div>
-              {therapistWfhDays.length > 0 && (
-                <div style={{ fontSize: '0.8rem', color: '#718096' }}>
-                  WFH: {therapistWfhDays.join(', ')}
+      <div style={{ overflowX: 'auto' }}>
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px',
+        }}>
+          {sortedTherapists.map((therapist) => {
+            const count = assignmentCounts[therapist] || 0;
+            const assignmentColor = getColorForAssignmentCount(count);
+            const therapistWfhDays = Object.entries(workingFromHome[therapist] || {})
+              .filter(([, isWfh]) => isWfh)
+              .map(([day]) => day.substring(0, 3));
+            return (
+              <div
+                key={therapist}
+                style={{
+                  padding: '12px', backgroundColor: '#F7FAFC', color: '#234E52',
+                  borderRadius: '6px', fontSize: '0.9rem',
+                  border: `1px solid ${assignmentColor}`, boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+                  display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
+                  gap: '6px', position: 'relative'
+                }}
+              >
+                <strong style={{ display: 'block' }}>{therapist}</strong>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>Assigned: {count}</span>
+                  <span style={{
+                    width: '10px', height: '10px', borderRadius: '50%',
+                    backgroundColor: assignmentColor, display: 'inline-block', flexShrink: 0,
+                  }} title={`Assignment Status: ${count} shifts`}></span>
                 </div>
-              )}
-            </div>
-          );
-        })}
+                {therapistWfhDays.length > 0 && (
+                  <div style={{ fontSize: '0.8rem', color: '#718096' }}>
+                    WFH: {therapistWfhDays.join(', ')}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
