@@ -1037,85 +1037,124 @@ const App = () => {
     toast.success("Auto roster has been generated and updated!", { position: "top-center", autoClose: 3000 });
 }, [currentYear, currentMonth, currentBlockedDays, workingFromHome]);
 
-const saveAsPNG = () => {
-    if (!calendarRef.current) return;
+const saveAsPNG = useCallback(() => {
+  const calendarElement = calendarRef.current;
+  if (!calendarElement) {
+    toast.error("Calendar element not found!", { position: "top-center" });
+    return;
+  }
 
-    // Get the current month and year from state
-    const currentMonthName = new Date(currentYear, currentMonth).toLocaleString('default', { month: 'long' });
-    const fileName = `Therapist-Roster-${currentMonthName}-${currentYear}.png`;
+  const currentMonthName = new Date(currentYear, currentMonth).toLocaleString('default', { month: 'long' });
+  const fileName = `Therapist-Roster-${currentMonthName}-${currentYear}.png`;
 
-    const originalScrollY = window.scrollY;
-    const calendarElement = calendarRef.current;
+  const originalScrollY = window.scrollY;
+  const elementsToHide = document.querySelectorAll('.hide-on-screenshot');
+  elementsToHide.forEach(el => el.style.display = 'none');
+  const originalDisplayProps = Array.from(elementsToHide).map(el => el.style.display);
 
-    // Temporarily hide parts of the UI not meant for the screenshot
-    const elementsToHide = document.querySelectorAll('.hide-on-screenshot');
-    elementsToHide.forEach(el => el.style.display = 'none');
-    const originalDisplayProps = Array.from(elementsToHide).map(el => el.style.display);
-    
-    // Add temporary styling to the body for a clean screenshot
-    document.body.style.backgroundColor = '#f4f7f9';
-    document.body.style.padding = '20px';
+  // Add temporary styling to the body for a clean screenshot
+  document.body.style.backgroundColor = '#f4f7f9';
+  document.body.style.padding = '20px';
 
-    // Temporarily hide scrollbar from the element and window
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    calendarElement.style.overflow = 'hidden';
+  // Temporarily hide scrollbar from the element and window
+  const originalBodyOverflow = document.body.style.overflow; // Renamed to avoid conflict
+  document.body.style.overflow = 'hidden';
+  const originalCalendarOverflow = calendarElement.style.overflow; // Store original calendar overflow
+  calendarElement.style.overflow = 'hidden';
 
-    // Temporarily set a wider width for the screenshot to prevent content wrap
-    const originalWidth = calendarElement.style.width;
-    calendarElement.style.width = 'fit-content';
+  // Temporarily set a wider width for the screenshot to prevent content wrap
+  const originalWidth = calendarElement.style.width;
+  calendarElement.style.width = 'fit-content';
 
-    html2canvas(calendarElement, {
-      scale: 2,
+
+  // --- NEW: Create and append a temporary title for the screenshot ---
+  const screenshotTitle = document.createElement('div');
+  screenshotTitle.id = 'screenshot-title'; // Give it an ID for easy removal
+  screenshotTitle.textContent = `${currentMonthName} ${currentYear}`;
+  Object.assign(screenshotTitle.style, {
+    position: 'absolute', // Position it absolutely to flow above content
+    top: `${window.scrollY + 20}px`, // Position relative to current scroll + some offset
+    left: '50%',
+    transform: 'translateX(-50%)',
+    zIndex: '10000', // Ensure it's on top
+    fontSize: '2.5rem', // Larger font size
+    fontWeight: 'bold',
+    color: '#1A202C',
+    backgroundColor: '#f4f7f9', // Match body background to blend
+    padding: '10px 20px',
+    borderRadius: '8px',
+    textAlign: 'center',
+    width: 'fit-content',
+    whiteSpace: 'nowrap',
+  });
+  document.body.appendChild(screenshotTitle);
+  // --- END NEW ---
+
+  // Find all calendar days
+  const dayElements = calendarElement.querySelectorAll('.CalendarDay_root'); // Assuming this is the correct class
+  dayElements.forEach(el => {
+    el.style.minHeight = '120px'; // Consistent height for all days
+    el.style.overflow = 'hidden'; // Hide any overflowing text
+  });
+
+  // Temporarily shrink weekend days to create a cleaner, more compact look
+  const weekendElements = calendarElement.querySelectorAll('.weekend-day'); // Assuming this is the correct class
+  weekendElements.forEach(el => {
+    el.style.minHeight = '60px';
+  });
+
+  // Wait for a brief moment to ensure styles are applied
+  setTimeout(() => {
+    html2canvas(document.body, { // Capture the entire body to include the title
       useCORS: true,
-      allowTaint: true,
-      backgroundColor: '#FFFFFF',
-      onclone: (doc) => {
-        // Adjust the cloned DOM for the screenshot
-        const clonedCalendar = doc.querySelector('#calendar-container');
-        if (clonedCalendar) {
-          clonedCalendar.style.width = 'fit-content';
-          clonedCalendar.style.overflow = 'hidden';
-
-          // Shrink weekends
-          const weekends = doc.querySelectorAll('.calendar-day-weekend');
-          weekends.forEach(day => {
-            const dayNumberElement = day.querySelector('strong');
-            if (dayNumberElement) {
-              dayNumberElement.style.fontSize = '0.7em';
-            }
-            const emptyText = day.querySelector('div[style*="Empty"]');
-            if (emptyText) {
-              emptyText.textContent = 'WKND';
-              emptyText.style.fontSize = '0.7em';
-              emptyText.style.color = '#A0AEC0';
-            }
-            day.style.minHeight = '100px';
-          });
-        }
-      }
+      scale: 2,
+      // You might need to adjust `windowHeight` and `windowWidth` if the content is very large
+      // windowHeight: document.documentElement.offsetHeight,
+      // windowWidth: document.documentElement.offsetWidth,
+      x: 0,
+      y: window.scrollY, // Capture from the current scroll position
+      height: calendarElement.offsetHeight + screenshotTitle.offsetHeight + 40, // Adjust height to include title and padding
+      width: Math.max(calendarElement.offsetWidth, screenshotTitle.offsetWidth) + 40, // Adjust width
+      backgroundColor: null, // Let the body background show through
     }).then(canvas => {
       const link = document.createElement('a');
-      link.download = fileName; // Use the new dynamic filename
       link.href = canvas.toDataURL('image/png');
+      link.download = fileName;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      toast.success('Roster saved as PNG!');
+      toast.success("Calendar saved as PNG!", { position: "top-center" });
     }).catch(error => {
       console.error('Error saving image:', error);
       toast.error('Failed to save PNG.');
     }).finally(() => {
-      // Restore original styles
+      // Restore original styles after the screenshot is taken
+      dayElements.forEach(el => {
+        el.style.minHeight = '';
+        el.style.overflow = '';
+      });
+      weekendElements.forEach(el => {
+        el.style.minHeight = '';
+      });
+
+      // Restore original styles for the main container and body
       elementsToHide.forEach((el, index) => el.style.display = originalDisplayProps[index]);
       document.body.style.backgroundColor = '';
       document.body.style.padding = '';
-      document.body.style.overflow = originalOverflow;
-      calendarElement.style.overflow = '';
+      document.body.style.overflow = originalBodyOverflow;
+      calendarElement.style.overflow = originalCalendarOverflow; // Restore calendar overflow
       calendarElement.style.width = originalWidth;
       window.scrollTo(0, originalScrollY);
+
+      // --- NEW: Remove the temporary title element ---
+      const titleToRemove = document.getElementById('screenshot-title');
+      if (titleToRemove) {
+        document.body.removeChild(titleToRemove);
+      }
+      // --- END NEW ---
     });
-  };
+  }, 100); // Short delay to ensure DOM updates are rendered
+}, [currentYear, currentMonth]);
 
 const downloadCsv = useCallback(() => {
   // Define CSV headers for the summary table
