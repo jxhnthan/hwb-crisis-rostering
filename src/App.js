@@ -1047,7 +1047,7 @@ const saveAsPNG = useCallback(() => {
   const currentMonthName = new Date(currentYear, currentMonth).toLocaleString('default', { month: 'long' });
   const fileName = `Therapist-Roster-${currentMonthName}-${currentYear}.png`;
 
-  // --- NEW: Create and append a temporary title element ---
+  // Create and append a temporary title element
   const titleDiv = document.createElement('div');
   titleDiv.id = 'snapshot-title'; // Use an ID for easy removal
   titleDiv.textContent = `${currentMonthName} ${currentYear}`;
@@ -1061,7 +1061,6 @@ const saveAsPNG = useCallback(() => {
   });
   // Insert the title at the top of the calendar container
   calendarElement.prepend(titleDiv);
-  // --- END NEW ---
 
   // Find all calendar days
   const dayElements = calendarElement.querySelectorAll('.CalendarDay_root');
@@ -1076,13 +1075,9 @@ const saveAsPNG = useCallback(() => {
     el.style.minHeight = '60px';
   });
 
-  // Temporarily hide parts of the UI not meant for the screenshot
-  const elementsToHide = document.querySelectorAll('.hide-on-screenshot');
-  elementsToHide.forEach(el => el.style.display = 'none');
-  const originalDisplayProps = Array.from(elementsToHide).map(el => el.style.display);
-
   // Wait for a brief moment to ensure styles and new element are applied
   setTimeout(() => {
+    // Corrected line: Target the specific calendar element
     html2canvas(calendarElement, {
       useCORS: true,
       scale: 2,
@@ -1107,15 +1102,11 @@ const saveAsPNG = useCallback(() => {
       console.error('Error saving image:', error);
       toast.error('Failed to save PNG.');
     }).finally(() => {
-      // Restore original styles for the main container
-      elementsToHide.forEach((el, index) => el.style.display = originalDisplayProps[index]);
-
-      // --- NEW: Remove the temporary title element ---
+      // Remove the temporary title element
       const titleToRemove = document.getElementById('snapshot-title');
       if (titleToRemove) {
         titleToRemove.remove();
       }
-      // --- END NEW ---
     });
   }, 100);
 }, [currentYear, currentMonth]);
