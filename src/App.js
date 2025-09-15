@@ -1163,7 +1163,7 @@ const App = () => {
   margin: '0',
   textAlign: 'center',
 }}>
-  SWEE Therapist Roster
+  SWEE Roster
 </h1>
           <div style={{
             width: '100%', display: 'flex', flexDirection: 'column', gap: '20px',
