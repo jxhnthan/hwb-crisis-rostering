@@ -485,7 +485,7 @@ const WFHTable = React.memo(({ therapists, workingFromHome, setWorkingFromHome }
   return (
     <div style={cardStyle}>
       <h3 style={sectionHeadingStyle}>Set Blocked Days</h3>
-      <div style={{ overflowX: 'auto' }}> {/* Add this wrapper div */}
+      <div style={{ overflowX: 'auto' }}>
         <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: '0.9rem' }}>
           <thead>
             <tr>
@@ -557,7 +557,6 @@ const AssignmentTracker = React.memo(({ therapists, assignmentCounts, averageShi
       </div>
       <div style={{ overflowX: 'auto' }}>
         <div style={{
-          // Change this line to define a fixed 3-column grid
           display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px',
         }}>
           {sortedTherapists.map((therapist) => {
@@ -1060,98 +1059,59 @@ const App = () => {
     }));
   }, []);
 
-const saveAsPNG = useCallback(() => {
-  const calendarElement = calendarRef.current;
-  if (!calendarElement) {
-    toast.error("Calendar element not found!", { position: "top-center" });
-    return;
-  }
+  const saveAsPNG = useCallback(() => {
+    const calendarElement = calendarRef.current;
+    if (!calendarElement) {
+      toast.error("Calendar element not found!", { position: "top-center" });
+      return;
+    }
 
-  const currentMonthName = new Date(currentYear, currentMonth).toLocaleString('default', { month: 'long' });
-  const fileName = `Therapist-Roster-${currentMonthName}-${currentYear}.png`;
+    const currentMonthName = new Date(currentYear, currentMonth).toLocaleString('default', { month: 'long' });
+    const fileName = `Therapist-Roster-${currentMonthName}-${currentYear}.png`;
 
-  // Create a temporary wrapper to contain the calendar and title for the screenshot
-  const screenshotWrapper = document.createElement('div');
-  screenshotWrapper.id = 'screenshot-wrapper';
-  screenshotWrapper.style.backgroundColor = '#FFFFFF';
-  screenshotWrapper.style.padding = '20px';
-  document.body.appendChild(screenshotWrapper);
+    // Create a temporary wrapper to contain the calendar and title for the screenshot
+    const screenshotWrapper = document.createElement('div');
+    screenshotWrapper.id = 'screenshot-wrapper';
+    screenshotWrapper.style.backgroundColor = '#FFFFFF';
+    screenshotWrapper.style.padding = '20px';
+    document.body.appendChild(screenshotWrapper);
 
-  // Create and append a temporary title element to the wrapper
-  const titleDiv = document.createElement('div');
-  titleDiv.textContent = `${currentMonthName} ${currentYear}`;
-  Object.assign(titleDiv.style, {
-    fontSize: '2rem',
-    fontWeight: 'bold',
-    textAlign: 'center',
-    color: '#1A202C',
-    padding: '10px 0 20px 0',
-  });
-  screenshotWrapper.appendChild(titleDiv);
-
-  // Temporarily move the calendar element into the wrapper
-  const originalParent = calendarElement.parentNode;
-  screenshotWrapper.appendChild(calendarElement);
-
-  // Temporarily adjust styles for the screenshot
-  const originalCalendarStyle = calendarElement.style.cssText;
-  calendarElement.style.cssText = 'width: fit-content; overflow: hidden;';
-  
-  // Adjust calendar day styles for the screenshot
-  const dayElements = calendarElement.querySelectorAll('.CalendarDay_root');
-  const weekendElements = calendarElement.querySelectorAll('.weekend-day');
-
-  // Allow calendar days to expand to fit their content
-  dayElements.forEach(el => {
-    el.style.minHeight = 'fit-content'; // Allows height to adjust to content
-    el.style.overflow = 'visible'; // Allows overflowing content to be shown
-  });
-  
-  // Temporarily shrink weekend days to create a cleaner, more compact look
-  weekendElements.forEach(el => {
-    el.style.minHeight = '60px';
-  });
-
-  // Wait for a brief moment to ensure styles are applied
-  setTimeout(() => {
-    html2canvas(screenshotWrapper, {
-      useCORS: true,
-      scale: 2,
-      backgroundColor: null,
-    }).then(canvas => {
-      const link = document.createElement('a');
-      link.href = canvas.toDataURL('image/png');
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      toast.success("Calendar saved as PNG!", { position: "top-center" });
-    }).catch(error => {
-      console.error('Error saving image:', error);
-      toast.error('Failed to save PNG.');
-    }).finally(() => {
-      // Restore original styles and DOM structure
-      if (originalParent) {
-        originalParent.appendChild(calendarElement);
-      }
-      calendarElement.style.cssText = originalCalendarStyle;
-      dayElements.forEach(el => {
-        el.style.minHeight = '';
-        el.style.overflow = '';
-      });
-      weekendElements.forEach(el => {
-        el.style.minHeight = '';
-      });
-      screenshotWrapper.remove();
+    // Create and append a temporary title element to the wrapper
+    const titleDiv = document.createElement('div');
+    titleDiv.textContent = `${currentMonthName} ${currentYear}`;
+    Object.assign(titleDiv.style, {
+      fontSize: '2rem',
+      fontWeight: 'bold',
+      textAlign: 'center',
+      color: '#1A202C',
+      padding: '10px 0 20px 0',
     });
-  }, 100);
-}, [currentYear, currentMonth]);
+    screenshotWrapper.appendChild(titleDiv);
 
+    // Temporarily move the calendar element into the wrapper
+    const originalParent = calendarElement.parentNode;
+    screenshotWrapper.appendChild(calendarElement);
+
+    // Temporarily adjust styles for the screenshot
+    const originalCalendarStyle = calendarElement.style.cssText;
+    calendarElement.style.cssText = 'width: fit-content; overflow: hidden;';
+    
+    // Adjust calendar day styles for the screenshot
+    const dayElements = calendarElement.querySelectorAll('.CalendarDay_root');
     const weekendElements = calendarElement.querySelectorAll('.weekend-day');
+
+    // Allow calendar days to expand to fit their content
+    dayElements.forEach(el => {
+      el.style.minHeight = 'fit-content';
+      el.style.overflow = 'visible';
+    });
+    
+    // Temporarily shrink weekend days to create a cleaner, more compact look
     weekendElements.forEach(el => {
       el.style.minHeight = '60px';
     });
 
+    // Wait for a brief moment to ensure styles are applied
     setTimeout(() => {
       html2canvas(screenshotWrapper, {
         useCORS: true,
@@ -1199,15 +1159,15 @@ const saveAsPNG = useCallback(() => {
           backgroundColor: '#F7FAFC', display: 'flex', flexDirection: 'column',
           alignItems: 'center', gap: '20px', flexShrink: 0
         }}>
-<h1 style={{
-  color: '#2D3748',
-  fontSize: '1.6rem',
-  fontWeight: '400', // Changed to a non-bold weight
-  margin: '0',
-  textAlign: 'center',
-}}>
-  SWEE Roster
-</h1>
+          <h1 style={{
+            color: '#2D3748',
+            fontSize: '1.6rem',
+            fontWeight: '400',
+            margin: '0',
+            textAlign: 'center',
+          }}>
+            SWEE Therapist Roster
+          </h1>
           <div style={{
             width: '100%', display: 'flex', flexDirection: 'column', gap: '20px',
             flexGrow: 1
@@ -1303,9 +1263,6 @@ const saveAsPNG = useCallback(() => {
 };
 
 export default App;
-
-
-
 
 
 
