@@ -1047,48 +1047,78 @@ const saveAsPNG = useCallback(() => {
   const currentMonthName = new Date(currentYear, currentMonth).toLocaleString('default', { month: 'long' });
   const fileName = `Therapist-Roster-${currentMonthName}-${currentYear}.png`;
 
-  const originalScrollY = window.scrollY;
+  // --- NEW: Create and append a temporary title element ---
+  const titleDiv = document.createElement('div');
+  titleDiv.id = 'snapshot-title'; // Use an ID for easy removal
+  titleDiv.textContent = `${currentMonthName} ${currentYear}`;
+  Object.assign(titleDiv.style, {
+    fontSize: '2rem',
+    fontWeight: 'bold',
+    textAlign: 'center',
+    color: '#1A202C',
+    padding: '10px 0 20px 0',
+    marginBottom: '20px',
+  });
+  // Insert the title at the top of the calendar container
+  calendarElement.prepend(titleDiv);
+  // --- END NEW ---
+
+  // Find all calendar days
+  const dayElements = calendarElement.querySelectorAll('.CalendarDay_root');
+  dayElements.forEach(el => {
+    el.style.minHeight = '120px'; // Consistent height for all days
+    el.style.overflow = 'hidden'; // Hide any overflowing text
+  });
+
+  // Temporarily shrink weekend days
+  const weekendElements = calendarElement.querySelectorAll('.weekend-day');
+  weekendElements.forEach(el => {
+    el.style.minHeight = '60px';
+  });
+
+  // Temporarily hide parts of the UI not meant for the screenshot
   const elementsToHide = document.querySelectorAll('.hide-on-screenshot');
   elementsToHide.forEach(el => el.style.display = 'none');
   const originalDisplayProps = Array.from(elementsToHide).map(el => el.style.display);
 
-  // Add temporary styling to the body for a clean screenshot
-  document.body.style.backgroundColor = '#f4f7f9';
-  document.body.style.padding = '20px';
+  // Wait for a brief moment to ensure styles and new element are applied
+  setTimeout(() => {
+    html2canvas(calendarElement, {
+      useCORS: true,
+      scale: 2,
+    }).then(canvas => {
+      const link = document.createElement('a');
+      link.href = canvas.toDataURL('image/png');
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success("Calendar saved as PNG!", { position: "top-center" });
 
-  // Temporarily hide scrollbar from the element and window
-  const originalBodyOverflow = document.body.style.overflow; // Renamed to avoid conflict
-  document.body.style.overflow = 'hidden';
-  const originalCalendarOverflow = calendarElement.style.overflow; // Store original calendar overflow
-  calendarElement.style.overflow = 'hidden';
+      // Restore original styles after the screenshot is taken
+      dayElements.forEach(el => {
+        el.style.minHeight = '';
+        el.style.overflow = '';
+      });
+      weekendElements.forEach(el => {
+        el.style.minHeight = '';
+      });
+    }).catch(error => {
+      console.error('Error saving image:', error);
+      toast.error('Failed to save PNG.');
+    }).finally(() => {
+      // Restore original styles for the main container
+      elementsToHide.forEach((el, index) => el.style.display = originalDisplayProps[index]);
 
-  // Temporarily set a wider width for the screenshot to prevent content wrap
-  const originalWidth = calendarElement.style.width;
-  calendarElement.style.width = 'fit-content';
-
-
-  // --- NEW: Create and append a temporary title for the screenshot ---
-  const screenshotTitle = document.createElement('div');
-  screenshotTitle.id = 'screenshot-title'; // Give it an ID for easy removal
-  screenshotTitle.textContent = `${currentMonthName} ${currentYear}`;
-  Object.assign(screenshotTitle.style, {
-    position: 'absolute', // Position it absolutely to flow above content
-    top: `${window.scrollY + 20}px`, // Position relative to current scroll + some offset
-    left: '50%',
-    transform: 'translateX(-50%)',
-    zIndex: '10000', // Ensure it's on top
-    fontSize: '2.5rem', // Larger font size
-    fontWeight: 'bold',
-    color: '#1A202C',
-    backgroundColor: '#f4f7f9', // Match body background to blend
-    padding: '10px 20px',
-    borderRadius: '8px',
-    textAlign: 'center',
-    width: 'fit-content',
-    whiteSpace: 'nowrap',
-  });
-  document.body.appendChild(screenshotTitle);
-  // --- END NEW ---
+      // --- NEW: Remove the temporary title element ---
+      const titleToRemove = document.getElementById('snapshot-title');
+      if (titleToRemove) {
+        titleToRemove.remove();
+      }
+      // --- END NEW ---
+    });
+  }, 100);
+}, [currentYear, currentMonth]);
 
   // Find all calendar days
   const dayElements = calendarElement.querySelectorAll('.CalendarDay_root'); // Assuming this is the correct class
