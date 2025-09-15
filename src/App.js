@@ -310,6 +310,7 @@ const CalendarDay = React.memo(({ day, moveTherapist, removeTherapist, isToday, 
   return (
     <div
       ref={drop}
+      className={`CalendarDay_root ${isWeekend ? 'weekend-day' : ''}`}
       style={{
         padding: '12px', minHeight: '160px', position: 'relative',
         backgroundColor: backgroundColor, borderRadius: '6px',
@@ -885,407 +886,339 @@ const App = () => {
       if (decompressed) {
         setCalendarData(decompressed.calendarData);
         setWorkingFromHome(decompressed.workingFromHome);
-        console.log(`Calendar and WFH data loaded from shared link (Timestamp: ${decompressed.timestamp || 'N/A'})!`);
-        toast.info("Calendar data loaded from shared link!", { position: "top-center", autoClose: 3000 });
-        window.history.replaceState({}, document.title, window.location.pathname);
+        toast.success("Calendar loaded from shared link!", { position: "top-center" });
+      } else {
+        toast.error("Failed to load shared data.", { position: "top-center" });
       }
     }
   }, []);
 
-  const goToToday = useCallback(() => {
-    if (currentYear === actualCurrentYear) {
-      setCurrentMonth(actualCurrentMonthIndex);
-      setTodayDate(new Date(actualCurrentYear, actualCurrentMonthIndex, actualCurrentDay));
-      toast.info("Navigated to today's date!", { position: "top-right", autoClose: 2000 });
-    } else {
-      toast.warn("Cannot go to 'Today' in a different year. Please switch to the current year first.", { position: "top-center", autoClose: 4000 });
-    }
-  }, [currentYear, actualCurrentYear, actualCurrentMonthIndex, actualCurrentDay]);
+  const moveTherapist = useCallback((therapistName, dayKey) => {
+    setCalendarData(prevData => {
+      const newData = { ...prevData };
+      const [year, month, day] = dayKey.split('-').map(Number);
+      const targetDay = newData[year][month - 1].find(d => d.dayKey === dayKey);
 
-  const moveTherapist = useCallback((name, dayKey) => {
-    setCalendarData((prevCalendarData) => {
-      const updatedYearCalendar = prevCalendarData[currentYear].map((month) => {
-        const dayIndex = month.findIndex(day => day.dayKey === dayKey);
-        if (dayIndex !== -1) {
-          const updatedDay = {
-            ...month[dayIndex],
-            therapists: [...month[dayIndex].therapists, name]
-          };
-          return month.map((day, idx) => (idx === dayIndex ? updatedDay : day));
+      if (targetDay) {
+        // Prevent adding a therapist who is already on the day
+        if (!targetDay.therapists.includes(therapistName)) {
+          targetDay.therapists = [...targetDay.therapists, therapistName];
         }
-        return month;
-      });
-
-      return {
-        ...prevCalendarData,
-        [currentYear]: updatedYearCalendar,
-      };
+      }
+      return newData;
     });
-  }, [currentYear]);
+  }, []);
 
-  const removeTherapist = useCallback((name, dayKey) => {
-    setCalendarData((prevCalendarData) => {
-      const updatedYearCalendar = prevCalendarData[currentYear].map((month) => {
-        const dayIndex = month.findIndex(day => day.dayKey === dayKey);
-        if (dayIndex !== -1) {
-          const updatedDay = {
-            ...month[dayIndex],
-            therapists: month[dayIndex].therapists.filter(t => t !== name)
-          };
-          return month.map((day, idx) => (idx === dayIndex ? updatedDay : day));
-        }
-        return month;
-      });
+  const removeTherapist = useCallback((therapistName, dayKey) => {
+    setCalendarData(prevData => {
+      const newData = { ...prevData };
+      const [year, month, day] = dayKey.split('-').map(Number);
+      const targetDay = newData[year][month - 1].find(d => d.dayKey === dayKey);
 
-      return {
-        ...prevCalendarData,
-        [currentYear]: updatedYearCalendar,
-      };
+      if (targetDay) {
+        targetDay.therapists = targetDay.therapists.filter(
+          (therapist) => therapist !== therapistName
+        );
+      }
+      return newData;
     });
-  }, [currentYear]);
+  }, []);
 
   const changeMonth = useCallback((direction) => {
-    let newMonth = currentMonth;
-    let newYear = currentYear;
-
-    if (direction === 'prev') {
-      newMonth--;
-      if (newMonth < 0) {
-        newMonth = 11;
-        newYear--;
+    setCurrentMonth(prevMonth => {
+      if (direction === 'prev') {
+        if (prevMonth === 0) {
+          setCurrentYear(prevYear => prevYear - 1);
+          return 11;
+        }
+        return prevMonth - 1;
+      } else {
+        if (prevMonth === 11) {
+          setCurrentYear(prevYear => prevYear + 1);
+          return 0;
+        }
+        return prevMonth + 1;
       }
-    } else if (direction === 'next') {
-      newMonth++;
-      if (newMonth > 11) {
-        newMonth = 0;
-        newYear++;
-      }
-    }
+    });
+  }, []);
 
-    if (newYear < 2025 || newYear > 2026) {
-      toast.error("Roster data is only available for 2025 and 2026.", { position: "top-right", autoClose: 3000 });
+  const goToToday = useCallback(() => {
+    setCurrentYear(actualCurrentYear);
+    setCurrentMonth(actualCurrentMonthIndex);
+    setTodayDate(new Date(actualCurrentYear, actualCurrentMonthIndex, actualCurrentDay));
+  }, [actualCurrentYear, actualCurrentMonthIndex, actualCurrentDay]);
+
+  const autoRoster = useCallback(() => {
+    const monthData = calendarData[currentYear][currentMonth];
+    const daysInMonth = monthData.length;
+    const workingDays = monthData.filter(day => {
+      const dayDate = new Date(day.dayKey);
+      const isWeekend = dayDate.getDay() === 0 || dayDate.getDay() === 6;
+      const isHoliday = currentBlockedDays.includes(day.dayKey);
+      return !isWeekend && !isHoliday;
+    });
+
+    if (workingDays.length === 0) {
+      toast.info("No working days in this month to auto-roster.", { position: "top-center" });
       return;
     }
 
-    setCurrentMonth(newMonth);
-    setCurrentYear(newYear);
-  }, [currentMonth, currentYear]);
+    const assignedCount = {};
+    therapists.forEach(t => assignedCount[t] = 0);
+
+    const newCalendarData = { ...calendarData };
+    newCalendarData[currentYear][currentMonth] = monthData.map(day => ({
+      ...day,
+      therapists: []
+    }));
+
+    workingDays.forEach(day => {
+      const dayDate = new Date(day.dayKey);
+      const dayOfWeek = dayDate.toLocaleString('en-US', { weekday: 'long' });
+
+      const availableTherapists = therapists.filter(therapist => {
+        const isWfh = workingFromHome[therapist]?.[dayOfWeek];
+        return !isWfh;
+      });
+
+      if (availableTherapists.length > 0) {
+        // Sort by least assigned therapist, then alphabetically
+        const sortedTherapists = [...availableTherapists].sort((a, b) => {
+          const countA = assignedCount[a];
+          const countB = assignedCount[b];
+          if (countA !== countB) {
+            return countA - countB;
+          }
+          return a.localeCompare(b);
+        });
+        const assignedTherapist = sortedTherapists[0];
+        const updatedDay = newCalendarData[currentYear][currentMonth].find(d => d.dayKey === day.dayKey);
+        if (updatedDay) {
+          updatedDay.therapists.push(assignedTherapist);
+          assignedCount[assignedTherapist] += 1;
+        }
+      }
+    });
+
+    setCalendarData(newCalendarData);
+    toast.success("Roster automatically generated!", { position: "top-center" });
+  }, [calendarData, currentYear, currentMonth, therapists, currentBlockedDays, workingFromHome]);
 
   const resetCalendar = useCallback(() => {
-    if (window.confirm("Are you sure you want to reset the calendar for the selected year and month? This cannot be undone.")) {
-      setCalendarData(prevCalendarData => {
-        const newCalendarData = { ...prevCalendarData };
-        newCalendarData[currentYear] = getCalendarForYear(currentYear);
-        return newCalendarData;
+    if (window.confirm("Are you sure you want to reset this month's calendar? This action cannot be undone.")) {
+      setCalendarData(prevData => {
+        const newData = { ...prevData };
+        newData[currentYear][currentMonth] = getCalendarForYear(currentYear)[currentMonth];
+        return newData;
       });
-      toast.success("Calendar reset successfully!", { position: "top-center" });
+      toast.info("Calendar for the month has been reset.", { position: "top-center" });
     }
-  }, [currentYear]);
+  }, [currentYear, currentMonth]);
 
-  const autoRoster = useCallback(() => {
-    const dailyTherapistCount = 1;
-    const workingTherapists = therapists;
-    let therapistIndex = 0;
+  const downloadCsv = useCallback(() => {
+    const monthData = calendarData[currentYear][currentMonth];
+    let csvContent = "data:text/csv;charset=utf-8,";
+    csvContent += `Date,Day,Therapists\n`;
 
-    const getDayName = (dayIndex) => {
-        return ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][dayIndex];
-    };
-
-    setCalendarData(prevCalendarData => {
-        const newMonthData = prevCalendarData[currentYear][currentMonth].map(day => ({
-            ...day,
-            therapists: [],
-        }));
-        
-        for (let i = 0; i < newMonthData.length; i++) {
-            const day = newMonthData[i];
-            const date = day.date;
-            const dayOfWeek = getDayName(date.getDay());
-
-            const isHoliday = currentBlockedDays.includes(day.dayKey);
-            const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-
-            if (!isHoliday && !isWeekend) {
-                const assignedForDay = [];
-                let assignedCount = 0;
-
-                while (assignedCount < dailyTherapistCount && assignedForDay.length < workingTherapists.length) {
-                    const therapist = workingTherapists[therapistIndex];
-                    const isWfh = workingFromHome[therapist]?.[dayOfWeek] || false;
-
-                    if (!isWfh) {
-                        assignedForDay.push(therapist);
-                        assignedCount++;
-                    }
-
-                    therapistIndex = (therapistIndex + 1) % workingTherapists.length;
-                }
-                day.therapists = assignedForDay.sort(() => Math.random() - 0.5);
-            }
-        }
-        
-        const updatedYearCalendar = prevCalendarData[currentYear].map((month, idx) =>
-            idx === currentMonth ? newMonthData : month
-        );
-
-        return {
-            ...prevCalendarData,
-            [currentYear]: updatedYearCalendar,
-        };
+    monthData.forEach(day => {
+      const dayOfWeek = day.date.toLocaleString('en-US', { weekday: 'short' });
+      const therapistsList = day.therapists.join('; ');
+      const row = `${day.dayKey},${dayOfWeek},"${therapistsList}"`;
+      csvContent += row + "\n";
     });
 
-    toast.success("Auto roster has been generated and updated!", { position: "top-center", autoClose: 3000 });
-}, [currentYear, currentMonth, currentBlockedDays, workingFromHome]);
-
-const saveAsPNG = useCallback(() => {
-  const calendarElement = calendarRef.current;
-  if (!calendarElement) {
-    toast.error("Calendar element not found!", { position: "top-center" });
-    return;
-  }
-
-  const currentMonthName = new Date(currentYear, currentMonth).toLocaleString('default', { month: 'long' });
-  const fileName = `Therapist-Roster-${currentMonthName}-${currentYear}.png`;
-
-  // Create a temporary wrapper to contain the calendar and title for the screenshot
-  const screenshotWrapper = document.createElement('div');
-  screenshotWrapper.id = 'screenshot-wrapper';
-  document.body.appendChild(screenshotWrapper);
-
-  // Create and append a temporary title element to the wrapper
-  const titleDiv = document.createElement('div');
-  titleDiv.textContent = `${currentMonthName} ${currentYear}`;
-  Object.assign(titleDiv.style, {
-    fontSize: '2rem',
-    fontWeight: 'bold',
-    textAlign: 'center',
-    color: '#1A202C',
-    padding: '10px 0 20px 0',
-  });
-  screenshotWrapper.appendChild(titleDiv);
-
-  // Temporarily move the calendar element into the wrapper
-  const originalParent = calendarElement.parentNode;
-  screenshotWrapper.appendChild(calendarElement);
-
-  // Temporarily adjust styles for the screenshot
-  const originalCalendarDisplay = calendarElement.style.display;
-  calendarElement.style.display = 'block'; // Ensure it's not a flex/grid item
-  
-  // Wait for DOM updates before capturing
-  setTimeout(() => {
-    html2canvas(screenshotWrapper, {
-      useCORS: true,
-      scale: 2,
-    }).then(canvas => {
-      const link = document.createElement('a');
-      link.href = canvas.toDataURL('image/png');
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      toast.success("Calendar saved as PNG!", { position: "top-center" });
-    }).catch(error => {
-      console.error('Error saving image:', error);
-      toast.error('Failed to save PNG.');
-    }).finally(() => {
-      // Restore the calendar to its original parent and remove the temporary wrapper
-      if (originalParent) {
-        originalParent.appendChild(calendarElement);
-      }
-      calendarElement.style.display = originalCalendarDisplay;
-      screenshotWrapper.remove();
-    });
-  }, 100);
-}, [currentYear, currentMonth]);
-
-  // Find all calendar days
-  const dayElements = calendarElement.querySelectorAll('.CalendarDay_root'); // Assuming this is the correct class
-  dayElements.forEach(el => {
-    el.style.minHeight = '120px'; // Consistent height for all days
-    el.style.overflow = 'hidden'; // Hide any overflowing text
-  });
-
-  // Temporarily shrink weekend days to create a cleaner, more compact look
-  const weekendElements = calendarElement.querySelectorAll('.weekend-day'); // Assuming this is the correct class
-  weekendElements.forEach(el => {
-    el.style.minHeight = '60px';
-  });
-
-  // Wait for a brief moment to ensure styles are applied
-  setTimeout(() => {
-    html2canvas(document.body, { // Capture the entire body to include the title
-      useCORS: true,
-      scale: 2,
-      // You might need to adjust `windowHeight` and `windowWidth` if the content is very large
-      // windowHeight: document.documentElement.offsetHeight,
-      // windowWidth: document.documentElement.offsetWidth,
-      x: 0,
-      y: window.scrollY, // Capture from the current scroll position
-      height: calendarElement.offsetHeight + screenshotTitle.offsetHeight + 40, // Adjust height to include title and padding
-      width: Math.max(calendarElement.offsetWidth, screenshotTitle.offsetWidth) + 40, // Adjust width
-      backgroundColor: null, // Let the body background show through
-    }).then(canvas => {
-      const link = document.createElement('a');
-      link.href = canvas.toDataURL('image/png');
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      toast.success("Calendar saved as PNG!", { position: "top-center" });
-    }).catch(error => {
-      console.error('Error saving image:', error);
-      toast.error('Failed to save PNG.');
-    }).finally(() => {
-      // Restore original styles after the screenshot is taken
-      dayElements.forEach(el => {
-        el.style.minHeight = '';
-        el.style.overflow = '';
-      });
-      weekendElements.forEach(el => {
-        el.style.minHeight = '';
-      });
-
-      // Restore original styles for the main container and body
-      elementsToHide.forEach((el, index) => el.style.display = originalDisplayProps[index]);
-      document.body.style.backgroundColor = '';
-      document.body.style.padding = '';
-      document.body.style.overflow = originalBodyOverflow;
-      calendarElement.style.overflow = originalCalendarOverflow; // Restore calendar overflow
-      calendarElement.style.width = originalWidth;
-      window.scrollTo(0, originalScrollY);
-
-      // --- NEW: Remove the temporary title element ---
-      const titleToRemove = document.getElementById('screenshot-title');
-      if (titleToRemove) {
-        document.body.removeChild(titleToRemove);
-      }
-      // --- END NEW ---
-    });
-  }, 100); // Short delay to ensure DOM updates are rendered
-}, [currentYear, currentMonth]);
-
-const downloadCsv = useCallback(() => {
-  // Define CSV headers for the summary table
-  let csvContent = "Therapist,Assignments\n";
-
-  // Get a sorted list of therapists for consistent output
-  const therapistNames = Object.keys(assignmentCounts).sort();
-
-  // Iterate over each therapist and add their total assignments to the CSV
-  therapistNames.forEach(therapist => {
-    const count = assignmentCounts[therapist];
-    // Use quotation marks to handle names with commas
-    csvContent += `"${therapist}",${count}\n`;
-  });
-
-  // Create a Blob from the CSV content
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  
-  // Create a temporary link element to trigger the download
-  const link = document.createElement('a');
-  const url = URL.createObjectURL(blob);
-  const monthName = new Date(currentYear, currentMonth).toLocaleString('en-US', { month: 'long' });
-
-  // Set the download attributes for the file
-  link.setAttribute('href', url);
-  link.setAttribute('download', `roster-summary-${monthName}-${currentYear}.csv`);
-  link.style.visibility = 'hidden';
-  document.body.appendChild(link);
-
-  // Programmatically click the link to start the download and then clean up
-  link.click();
-  document.body.removeChild(link);
-
-  // Display a success toast notification
-  toast.success("Summary CSV downloaded successfully!", { position: "top-center" });
-}, [assignmentCounts, currentYear, currentMonth]);
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Therapist-Roster-${currentYear}-${currentMonth + 1}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("CSV file downloaded!", { position: "top-center" });
+  }, [calendarData, currentYear, currentMonth]);
 
   const generateShareLink = useCallback(() => {
-    const dataToCompress = {
-      calendarData,
-      workingFromHome,
+    const dataToShare = {
+      calendarData: calendarData,
+      workingFromHome: workingFromHome
     };
-    const compressedData = compressData(dataToCompress);
-    const url = `${window.location.origin}${window.location.pathname}?data=${compressedData}`;
-    navigator.clipboard.writeText(url)
+    const compressed = compressData(dataToShare);
+    const shareUrl = `${window.location.origin}${window.location.pathname}?data=${compressed}`;
+    navigator.clipboard.writeText(shareUrl)
       .then(() => {
         toast.success("Shareable link copied to clipboard!", { position: "top-center" });
       })
-      .catch(err => {
-        console.error("Failed to copy URL: ", err);
-        toast.error("Failed to copy link. Please try again.", { position: "top-center" });
+      .catch(() => {
+        toast.error("Failed to copy link.", { position: "top-center" });
       });
   }, [calendarData, workingFromHome]);
 
   const toggleCollapse = useCallback((role) => {
     setCollapsedRoles(prev => ({
       ...prev,
-      [role]: !prev[role]
+      [role]: !prev[role],
     }));
   }, []);
+
+  const saveAsPNG = useCallback(() => {
+    const calendarElement = calendarRef.current;
+    if (!calendarElement) {
+      toast.error("Calendar element not found!", { position: "top-center" });
+      return;
+    }
+
+    const currentMonthName = new Date(currentYear, currentMonth).toLocaleString('default', { month: 'long' });
+    const fileName = `Therapist-Roster-${currentMonthName}-${currentYear}.png`;
+
+    // Create a temporary wrapper to contain the calendar and title for the screenshot
+    const screenshotWrapper = document.createElement('div');
+    screenshotWrapper.id = 'screenshot-wrapper';
+    screenshotWrapper.style.backgroundColor = '#FFFFFF';
+    screenshotWrapper.style.padding = '20px';
+    document.body.appendChild(screenshotWrapper);
+
+    // Create and append a temporary title element to the wrapper
+    const titleDiv = document.createElement('div');
+    titleDiv.textContent = `${currentMonthName} ${currentYear}`;
+    Object.assign(titleDiv.style, {
+      fontSize: '2rem',
+      fontWeight: 'bold',
+      textAlign: 'center',
+      color: '#1A202C',
+      padding: '10px 0 20px 0',
+    });
+    screenshotWrapper.appendChild(titleDiv);
+
+    // Temporarily move the calendar element into the wrapper
+    const originalParent = calendarElement.parentNode;
+    screenshotWrapper.appendChild(calendarElement);
+
+    // Temporarily adjust styles for the screenshot
+    const originalCalendarStyle = calendarElement.style.cssText;
+    calendarElement.style.cssText = 'width: fit-content; overflow: hidden;';
+    
+    // Adjust calendar day styles for the screenshot
+    const dayElements = calendarElement.querySelectorAll('.CalendarDay_root');
+    dayElements.forEach(el => {
+      el.style.minHeight = '120px';
+      el.style.overflow = 'hidden';
+    });
+
+    const weekendElements = calendarElement.querySelectorAll('.weekend-day');
+    weekendElements.forEach(el => {
+      el.style.minHeight = '60px';
+    });
+
+    setTimeout(() => {
+      html2canvas(screenshotWrapper, {
+        useCORS: true,
+        scale: 2,
+        backgroundColor: null,
+      }).then(canvas => {
+        const link = document.createElement('a');
+        link.href = canvas.toDataURL('image/png');
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success("Calendar saved as PNG!", { position: "top-center" });
+      }).catch(error => {
+        console.error('Error saving image:', error);
+        toast.error('Failed to save PNG.');
+      }).finally(() => {
+        // Restore original styles and DOM structure
+        if (originalParent) {
+          originalParent.appendChild(calendarElement);
+        }
+        calendarElement.style.cssText = originalCalendarStyle;
+        dayElements.forEach(el => {
+          el.style.minHeight = '';
+          el.style.overflow = '';
+        });
+        weekendElements.forEach(el => {
+          el.style.minHeight = '';
+        });
+        screenshotWrapper.remove();
+      });
+    }, 100);
+  }, [currentYear, currentMonth]);
 
   return (
     <DndProvider backend={HTML5Backend}>
       <div style={{
-        backgroundColor: '#F7FAFC', minHeight: '100vh', padding: '20px',
-        fontFamily: "'Inter', sans-serif", color: '#2D3748',
-        display: 'flex', gap: '20px',
+        display: 'flex', minHeight: '100vh', backgroundColor: '#F0F4F8',
+        fontFamily: "'Inter', sans-serif"
       }}>
         <ToastContainer />
+        {/* Left Sidebar */}
         <div style={{
-          width: '300px', flexShrink: 0,
-          display: 'flex', flexDirection: 'column', gap: '20px',
+          width: '320px', padding: '20px', borderRight: '1px solid #E2E8F0',
+          backgroundColor: '#F7FAFC', display: 'flex', flexDirection: 'column',
+          alignItems: 'center', gap: '20px', flexShrink: 0
         }}>
-          <TherapistList
-            therapistGroups={therapistGroups}
-            collapsedRoles={collapsedRoles}
-            toggleCollapse={toggleCollapse}
-          />
-          <WFHTable
-            therapists={therapists}
-            workingFromHome={workingFromHome}
-            setWorkingFromHome={setWorkingFromHome}
-          />
-          <AssignmentTracker
-            therapists={therapists}
-            assignmentCounts={assignmentCounts}
-            averageShiftsPerTherapist={averageShiftsPerTherapist}
-            workingFromHome={workingFromHome}
-          />
-        </div>
-        <div style={{
-          flex: 1, minWidth: 0,
-          display: 'flex', flexDirection: 'column',
-          backgroundColor: '#FFFFFF', padding: '20px', borderRadius: '12px',
-          boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
-        }}>
+          <h1 style={{
+            color: '#1A202C', fontSize: '1.8rem', fontWeight: '800', margin: '0',
+            textAlign: 'center', lineHeight: '1.2'
+          }}>
+            SWEE Therapist Roster
+          </h1>
           <div style={{
-            display: 'flex', borderBottom: '2px solid #E2E8F0', marginBottom: '20px',
+            width: '100%', display: 'flex', flexDirection: 'column', gap: '20px',
+            flexGrow: 1
+          }}>
+            <TherapistList
+              therapistGroups={therapistGroups}
+              collapsedRoles={collapsedRoles}
+              toggleCollapse={toggleCollapse}
+            />
+            {activeTab === 'calendar' && (
+              <>
+                <WFHTable
+                  therapists={therapists}
+                  workingFromHome={workingFromHome}
+                  setWorkingFromHome={setWorkingFromHome}
+                />
+                <AssignmentTracker
+                  therapists={therapists}
+                  assignmentCounts={assignmentCounts}
+                  averageShiftsPerTherapist={averageShiftsPerTherapist}
+                  workingFromHome={workingFromHome}
+                />
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div style={{ flex: 1, padding: '40px', overflowY: 'auto' }}>
+          <div style={{
+            display: 'flex', borderBottom: '2px solid #E2E8F0',
+            marginBottom: '30px'
           }}>
             <button
+              onClick={() => setActiveTab('calendar')}
               style={{
                 ...tabButtonStyle,
-                borderBottom: activeTab === 'calendar' ? '2px solid #3182CE' : 'none',
                 color: activeTab === 'calendar' ? '#3182CE' : '#718096',
+                borderBottom: activeTab === 'calendar' ? '3px solid #3182CE' : '3px solid transparent'
               }}
-              onClick={() => setActiveTab('calendar')}
             >
               Calendar
             </button>
             <button
+              onClick={() => setActiveTab('patch-notes')}
               style={{
                 ...tabButtonStyle,
-                borderBottom: activeTab === 'patchNotes' ? '2px solid #3182CE' : 'none',
-                color: activeTab === 'patchNotes' ? '#3182CE' : '#718096',
+                color: activeTab === 'patch-notes' ? '#3182CE' : '#718096',
+                borderBottom: activeTab === 'patch-notes' ? '3px solid #3182CE' : '3px solid transparent'
               }}
-              onClick={() => setActiveTab('patchNotes')}
             >
               Patch Notes
             </button>
           </div>
+
           {activeTab === 'calendar' && (
-            <>
+            <div style={{ minHeight: '100%' }}>
               <CalendarControls
                 currentYear={currentYear}
                 currentMonth={currentMonth}
@@ -1301,7 +1234,7 @@ const downloadCsv = useCallback(() => {
                 downloadCsv={downloadCsv}
                 generateShareLink={generateShareLink}
               />
-              <div ref={calendarRef} style={{ flex: 1, overflowY: 'auto', borderTop: '1px solid #E2E8F0', paddingTop: '20px' }}>
+              <div ref={calendarRef}>
                 <Calendar
                   monthDays={calendarData[currentYear][currentMonth]}
                   moveTherapist={moveTherapist}
@@ -1310,13 +1243,13 @@ const downloadCsv = useCallback(() => {
                   blockedDaysForYear={currentBlockedDays}
                 />
               </div>
-            </>
-          )}
-          {activeTab === 'patchNotes' && (
-            <div style={{ flex: 1, overflowY: 'auto' }}>
-              <PatchNotesSection patchNotes={patchNotes} />
             </div>
           )}
+
+          {activeTab === 'patch-notes' && (
+            <PatchNotesSection patchNotes={patchNotes} />
+          )}
+
         </div>
       </div>
     </DndProvider>
@@ -1324,7 +1257,6 @@ const downloadCsv = useCallback(() => {
 };
 
 export default App;
-
 
 
 
