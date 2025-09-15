@@ -485,7 +485,7 @@ const WFHTable = React.memo(({ therapists, workingFromHome, setWorkingFromHome }
   return (
     <div style={cardStyle}>
       <h3 style={sectionHeadingStyle}>Set Blocked Days</h3>
-      <div style={{ overflowX: 'auto' }}>
+      <div style={{ overflowX: 'auto' }}> {/* Add this wrapper div */}
         <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: '0.9rem' }}>
           <thead>
             <tr>
@@ -557,6 +557,7 @@ const AssignmentTracker = React.memo(({ therapists, assignmentCounts, averageShi
       </div>
       <div style={{ overflowX: 'auto' }}>
         <div style={{
+          // Change this line to define a fixed 3-column grid
           display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px',
         }}>
           {sortedTherapists.map((therapist) => {
@@ -1092,35 +1093,18 @@ const App = () => {
     const originalParent = calendarElement.parentNode;
     screenshotWrapper.appendChild(calendarElement);
 
-    // Find the Calendar component's grid container and store its original styles
-    const calendarGrid = calendarElement.querySelector('div[style*="grid-template-columns: repeat(7, minmax(150px, 1fr))"]');
-    if (!calendarGrid) {
-      console.error("Calendar grid container not found.");
-      screenshotWrapper.remove();
-      return;
-    }
-
-    const originalGridStyle = calendarGrid.style.cssText;
+    // Temporarily adjust styles for the screenshot
+    const originalCalendarStyle = calendarElement.style.cssText;
+    calendarElement.style.cssText = 'width: fit-content; overflow: hidden;';
+    
+    // Adjust calendar day styles for the screenshot
     const dayElements = calendarElement.querySelectorAll('.CalendarDay_root');
-    const originalDayStyles = Array.from(dayElements).map(el => el.style.cssText);
-    const weekendElements = calendarElement.querySelectorAll('.weekend-day');
-
-    // Apply the fix: force a fixed-width grid layout and adjust day styles
-    Object.assign(calendarGrid.style, {
-      gridTemplateColumns: 'repeat(7, 250px)',
-      gap: '0px',
-    });
     dayElements.forEach(el => {
-      Object.assign(el.style, {
-        minHeight: 'fit-content',
-        overflow: 'visible',
-        width: '250px',
-        border: '1px solid #E2E8F0',
-        margin: '0',
-      });
+      el.style.minHeight = '120px';
+      el.style.overflow = 'hidden';
     });
 
-    // Temporarily shrink weekend days for a cleaner look
+    const weekendElements = calendarElement.querySelectorAll('.weekend-day');
     weekendElements.forEach(el => {
       el.style.minHeight = '60px';
     });
@@ -1142,19 +1126,22 @@ const App = () => {
         console.error('Error saving image:', error);
         toast.error('Failed to save PNG.');
       }).finally(() => {
-        // Cleanup: restore original styles and DOM structure
+        // Restore original styles and DOM structure
         if (originalParent) {
           originalParent.appendChild(calendarElement);
         }
-        calendarGrid.style.cssText = originalGridStyle;
-        dayElements.forEach((el, index) => {
-          el.style.cssText = originalDayStyles[index];
+        calendarElement.style.cssText = originalCalendarStyle;
+        dayElements.forEach(el => {
+          el.style.minHeight = '';
+          el.style.overflow = '';
+        });
+        weekendElements.forEach(el => {
+          el.style.minHeight = '';
         });
         screenshotWrapper.remove();
       });
     }, 100);
   }, [currentYear, currentMonth]);
-
 
   return (
     <DndProvider backend={HTML5Backend}>
@@ -1169,15 +1156,15 @@ const App = () => {
           backgroundColor: '#F7FAFC', display: 'flex', flexDirection: 'column',
           alignItems: 'center', gap: '20px', flexShrink: 0
         }}>
-          <h1 style={{
-            color: '#2D3748',
-            fontSize: '1.6rem',
-            fontWeight: '400',
-            margin: '0',
-            textAlign: 'center',
-          }}>
-            SWEE Therapist Roster
-          </h1>
+<h1 style={{
+  color: '#2D3748', // A softer, more professional dark gray
+  fontSize: '1.6rem', // Slightly smaller for a less imposing feel
+  fontWeight: '600', // Still bold, but not as heavy
+  margin: '0',
+  textAlign: 'center',
+}}>
+  SWEE Roster
+</h1>
           <div style={{
             width: '100%', display: 'flex', flexDirection: 'column', gap: '20px',
             flexGrow: 1
@@ -1273,7 +1260,6 @@ const App = () => {
 };
 
 export default App;
-
 
 
 
