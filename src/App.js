@@ -1156,12 +1156,15 @@ const App = () => {
           backgroundColor: '#F7FAFC', display: 'flex', flexDirection: 'column',
           alignItems: 'center', gap: '20px', flexShrink: 0
         }}>
-          <h1 style={{
-            color: '#1A202C', fontSize: '1.8rem', fontWeight: '800', margin: '0',
-            textAlign: 'center', lineHeight: '1.2'
-          }}>
-            SWEE Therapist Roster
-          </h1>
+<h1 style={{
+  color: '#2D3748',
+  fontSize: '1.6rem',
+  fontWeight: '400', // Changed to a non-bold weight
+  margin: '0',
+  textAlign: 'center',
+}}>
+  SWEE Therapist Roster
+</h1>
           <div style={{
             width: '100%', display: 'flex', flexDirection: 'column', gap: '20px',
             flexGrow: 1
