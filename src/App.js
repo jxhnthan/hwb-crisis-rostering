@@ -1060,49 +1060,92 @@ const App = () => {
     }));
   }, []);
 
-  const saveAsPNG = useCallback(() => {
-    const calendarElement = calendarRef.current;
-    if (!calendarElement) {
-      toast.error("Calendar element not found!", { position: "top-center" });
-      return;
-    }
+const saveAsPNG = useCallback(() => {
+  const calendarElement = calendarRef.current;
+  if (!calendarElement) {
+    toast.error("Calendar element not found!", { position: "top-center" });
+    return;
+  }
 
-    const currentMonthName = new Date(currentYear, currentMonth).toLocaleString('default', { month: 'long' });
-    const fileName = `Therapist-Roster-${currentMonthName}-${currentYear}.png`;
+  const currentMonthName = new Date(currentYear, currentMonth).toLocaleString('default', { month: 'long' });
+  const fileName = `Therapist-Roster-${currentMonthName}-${currentYear}.png`;
 
-    // Create a temporary wrapper to contain the calendar and title for the screenshot
-    const screenshotWrapper = document.createElement('div');
-    screenshotWrapper.id = 'screenshot-wrapper';
-    screenshotWrapper.style.backgroundColor = '#FFFFFF';
-    screenshotWrapper.style.padding = '20px';
-    document.body.appendChild(screenshotWrapper);
+  // Create a temporary wrapper to contain the calendar and title for the screenshot
+  const screenshotWrapper = document.createElement('div');
+  screenshotWrapper.id = 'screenshot-wrapper';
+  screenshotWrapper.style.backgroundColor = '#FFFFFF';
+  screenshotWrapper.style.padding = '20px';
+  document.body.appendChild(screenshotWrapper);
 
-    // Create and append a temporary title element to the wrapper
-    const titleDiv = document.createElement('div');
-    titleDiv.textContent = `${currentMonthName} ${currentYear}`;
-    Object.assign(titleDiv.style, {
-      fontSize: '2rem',
-      fontWeight: 'bold',
-      textAlign: 'center',
-      color: '#1A202C',
-      padding: '10px 0 20px 0',
+  // Create and append a temporary title element to the wrapper
+  const titleDiv = document.createElement('div');
+  titleDiv.textContent = `${currentMonthName} ${currentYear}`;
+  Object.assign(titleDiv.style, {
+    fontSize: '2rem',
+    fontWeight: 'bold',
+    textAlign: 'center',
+    color: '#1A202C',
+    padding: '10px 0 20px 0',
+  });
+  screenshotWrapper.appendChild(titleDiv);
+
+  // Temporarily move the calendar element into the wrapper
+  const originalParent = calendarElement.parentNode;
+  screenshotWrapper.appendChild(calendarElement);
+
+  // Temporarily adjust styles for the screenshot
+  const originalCalendarStyle = calendarElement.style.cssText;
+  calendarElement.style.cssText = 'width: fit-content; overflow: hidden;';
+  
+  // Adjust calendar day styles for the screenshot
+  const dayElements = calendarElement.querySelectorAll('.CalendarDay_root');
+  const weekendElements = calendarElement.querySelectorAll('.weekend-day');
+
+  // Allow calendar days to expand to fit their content
+  dayElements.forEach(el => {
+    el.style.minHeight = 'fit-content'; // Allows height to adjust to content
+    el.style.overflow = 'visible'; // Allows overflowing content to be shown
+  });
+  
+  // Temporarily shrink weekend days to create a cleaner, more compact look
+  weekendElements.forEach(el => {
+    el.style.minHeight = '60px';
+  });
+
+  // Wait for a brief moment to ensure styles are applied
+  setTimeout(() => {
+    html2canvas(screenshotWrapper, {
+      useCORS: true,
+      scale: 2,
+      backgroundColor: null,
+    }).then(canvas => {
+      const link = document.createElement('a');
+      link.href = canvas.toDataURL('image/png');
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success("Calendar saved as PNG!", { position: "top-center" });
+    }).catch(error => {
+      console.error('Error saving image:', error);
+      toast.error('Failed to save PNG.');
+    }).finally(() => {
+      // Restore original styles and DOM structure
+      if (originalParent) {
+        originalParent.appendChild(calendarElement);
+      }
+      calendarElement.style.cssText = originalCalendarStyle;
+      dayElements.forEach(el => {
+        el.style.minHeight = '';
+        el.style.overflow = '';
+      });
+      weekendElements.forEach(el => {
+        el.style.minHeight = '';
+      });
+      screenshotWrapper.remove();
     });
-    screenshotWrapper.appendChild(titleDiv);
-
-    // Temporarily move the calendar element into the wrapper
-    const originalParent = calendarElement.parentNode;
-    screenshotWrapper.appendChild(calendarElement);
-
-    // Temporarily adjust styles for the screenshot
-    const originalCalendarStyle = calendarElement.style.cssText;
-    calendarElement.style.cssText = 'width: fit-content; overflow: hidden;';
-    
-    // Adjust calendar day styles for the screenshot
-    const dayElements = calendarElement.querySelectorAll('.CalendarDay_root');
-    dayElements.forEach(el => {
-      el.style.minHeight = '120px';
-      el.style.overflow = 'hidden';
-    });
+  }, 100);
+}, [currentYear, currentMonth]);
 
     const weekendElements = calendarElement.querySelectorAll('.weekend-day');
     weekendElements.forEach(el => {
