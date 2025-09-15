@@ -1092,26 +1092,39 @@ const App = () => {
     const originalParent = calendarElement.parentNode;
     screenshotWrapper.appendChild(calendarElement);
 
-    // Temporarily adjust styles for the screenshot
-    const originalCalendarStyle = calendarElement.style.cssText;
-    calendarElement.style.cssText = 'width: fit-content; overflow: hidden;';
-    
-    // Adjust calendar day styles for the screenshot
+    // Find the Calendar component's grid container and store its original styles
+    const calendarGrid = calendarElement.querySelector('div[style*="grid-template-columns: repeat(7, minmax(150px, 1fr))"]');
+    if (!calendarGrid) {
+      console.error("Calendar grid container not found.");
+      screenshotWrapper.remove();
+      return;
+    }
+
+    const originalGridStyle = calendarGrid.style.cssText;
     const dayElements = calendarElement.querySelectorAll('.CalendarDay_root');
+    const originalDayStyles = Array.from(dayElements).map(el => el.style.cssText);
     const weekendElements = calendarElement.querySelectorAll('.weekend-day');
 
-    // Allow calendar days to expand to fit their content
-    dayElements.forEach(el => {
-      el.style.minHeight = 'fit-content';
-      el.style.overflow = 'visible';
+    // Apply the fix: force a fixed-width grid layout and adjust day styles
+    Object.assign(calendarGrid.style, {
+      gridTemplateColumns: 'repeat(7, 250px)',
+      gap: '0px',
     });
-    
-    // Temporarily shrink weekend days to create a cleaner, more compact look
+    dayElements.forEach(el => {
+      Object.assign(el.style, {
+        minHeight: 'fit-content',
+        overflow: 'visible',
+        width: '250px',
+        border: '1px solid #E2E8F0',
+        margin: '0',
+      });
+    });
+
+    // Temporarily shrink weekend days for a cleaner look
     weekendElements.forEach(el => {
       el.style.minHeight = '60px';
     });
 
-    // Wait for a brief moment to ensure styles are applied
     setTimeout(() => {
       html2canvas(screenshotWrapper, {
         useCORS: true,
@@ -1129,22 +1142,19 @@ const App = () => {
         console.error('Error saving image:', error);
         toast.error('Failed to save PNG.');
       }).finally(() => {
-        // Restore original styles and DOM structure
+        // Cleanup: restore original styles and DOM structure
         if (originalParent) {
           originalParent.appendChild(calendarElement);
         }
-        calendarElement.style.cssText = originalCalendarStyle;
-        dayElements.forEach(el => {
-          el.style.minHeight = '';
-          el.style.overflow = '';
-        });
-        weekendElements.forEach(el => {
-          el.style.minHeight = '';
+        calendarGrid.style.cssText = originalGridStyle;
+        dayElements.forEach((el, index) => {
+          el.style.cssText = originalDayStyles[index];
         });
         screenshotWrapper.remove();
       });
     }, 100);
   }, [currentYear, currentMonth]);
+
 
   return (
     <DndProvider backend={HTML5Backend}>
@@ -1263,13 +1273,6 @@ const App = () => {
 };
 
 export default App;
-
-
-
-
-
-
-
 
 
 
