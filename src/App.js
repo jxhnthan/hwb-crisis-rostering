@@ -1047,9 +1047,13 @@ const saveAsPNG = useCallback(() => {
   const currentMonthName = new Date(currentYear, currentMonth).toLocaleString('default', { month: 'long' });
   const fileName = `Therapist-Roster-${currentMonthName}-${currentYear}.png`;
 
-  // Create and append a temporary title element
+  // Create a temporary wrapper to contain the calendar and title for the screenshot
+  const screenshotWrapper = document.createElement('div');
+  screenshotWrapper.id = 'screenshot-wrapper';
+  document.body.appendChild(screenshotWrapper);
+
+  // Create and append a temporary title element to the wrapper
   const titleDiv = document.createElement('div');
-  titleDiv.id = 'snapshot-title'; // Use an ID for easy removal
   titleDiv.textContent = `${currentMonthName} ${currentYear}`;
   Object.assign(titleDiv.style, {
     fontSize: '2rem',
@@ -1057,28 +1061,20 @@ const saveAsPNG = useCallback(() => {
     textAlign: 'center',
     color: '#1A202C',
     padding: '10px 0 20px 0',
-    marginBottom: '20px',
   });
-  // Insert the title at the top of the calendar container
-  calendarElement.prepend(titleDiv);
+  screenshotWrapper.appendChild(titleDiv);
 
-  // Find all calendar days
-  const dayElements = calendarElement.querySelectorAll('.CalendarDay_root');
-  dayElements.forEach(el => {
-    el.style.minHeight = '120px'; // Consistent height for all days
-    el.style.overflow = 'hidden'; // Hide any overflowing text
-  });
+  // Temporarily move the calendar element into the wrapper
+  const originalParent = calendarElement.parentNode;
+  screenshotWrapper.appendChild(calendarElement);
 
-  // Temporarily shrink weekend days
-  const weekendElements = calendarElement.querySelectorAll('.weekend-day');
-  weekendElements.forEach(el => {
-    el.style.minHeight = '60px';
-  });
-
-  // Wait for a brief moment to ensure styles and new element are applied
+  // Temporarily adjust styles for the screenshot
+  const originalCalendarDisplay = calendarElement.style.display;
+  calendarElement.style.display = 'block'; // Ensure it's not a flex/grid item
+  
+  // Wait for DOM updates before capturing
   setTimeout(() => {
-    // Corrected line: Target the specific calendar element
-    html2canvas(calendarElement, {
+    html2canvas(screenshotWrapper, {
       useCORS: true,
       scale: 2,
     }).then(canvas => {
@@ -1089,24 +1085,16 @@ const saveAsPNG = useCallback(() => {
       link.click();
       document.body.removeChild(link);
       toast.success("Calendar saved as PNG!", { position: "top-center" });
-
-      // Restore original styles after the screenshot is taken
-      dayElements.forEach(el => {
-        el.style.minHeight = '';
-        el.style.overflow = '';
-      });
-      weekendElements.forEach(el => {
-        el.style.minHeight = '';
-      });
     }).catch(error => {
       console.error('Error saving image:', error);
       toast.error('Failed to save PNG.');
     }).finally(() => {
-      // Remove the temporary title element
-      const titleToRemove = document.getElementById('snapshot-title');
-      if (titleToRemove) {
-        titleToRemove.remove();
+      // Restore the calendar to its original parent and remove the temporary wrapper
+      if (originalParent) {
+        originalParent.appendChild(calendarElement);
       }
+      calendarElement.style.display = originalCalendarDisplay;
+      screenshotWrapper.remove();
     });
   }, 100);
 }, [currentYear, currentMonth]);
