@@ -321,12 +321,13 @@ const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked }
       ref={drop}
       className={`CalendarDay_root ${isWeekend ? 'weekend-day' : ''}`}
       style={{
-        padding: '16px', minHeight: '160px', position: 'relative',
+        padding: '16px', minHeight: '160px', maxHeight: '200px', position: 'relative',
         backgroundColor: backgroundColor, borderRadius: '12px',
         boxShadow: boxShadow, display: 'flex', flexDirection: 'column',
         gap: '12px', border: `1px solid ${borderColor}`,
         transition: 'all 0.15s ease',
-        overflowY: 'auto',
+        overflowY: 'auto', overflowX: 'hidden',
+        scrollbarWidth: 'thin', scrollbarColor: '#d0d0d0 #f5f5f5'
       }}
     >
       <strong
@@ -892,6 +893,9 @@ const App = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [activeTab, setActiveTab] = useState('calendar');
   const [liveDateTime, setLiveDateTime] = useState('');
+  
+  const sidebarRef = useRef(null);
+  const mainContentRef = useRef(null);
 
   const calendarRef = useRef(null);
 
@@ -998,6 +1002,13 @@ const App = () => {
       }
     }
   }, []);
+
+  // Effect hook to restore scroll position when switching tabs
+  useEffect(() => {
+    if (mainContentRef.current) {
+      mainContentRef.current.scrollTop = 0;
+    }
+  }, [activeTab]);
 
   const moveTherapist = useCallback((therapistName, dayKey) => {
     setCalendarData(prevData => {
@@ -1285,16 +1296,23 @@ const App = () => {
   return (
     <DndProvider backend={HTML5Backend}>
       <div style={{
-        display: 'flex', minHeight: '100vh', backgroundColor: '#fafafa',
-        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+        display: 'flex', height: '100vh', backgroundColor: '#fafafa',
+        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        overflow: 'hidden'
       }}>
         <ToastContainer />
         {/* Left Sidebar */}
-        <div style={{
-          width: '320px', padding: '20px', borderRight: '1px solid #f0f0f0',
-          backgroundColor: '#ffffff', display: 'flex', flexDirection: 'column',
-          gap: '16px', flexShrink: 0, overflowY: 'auto'
-        }}>
+        <div 
+          ref={sidebarRef}
+          className="smooth-scroll"
+          style={{
+            width: '320px', height: '100vh', padding: '20px', 
+            borderRight: '1px solid #f0f0f0', backgroundColor: '#ffffff', 
+            display: 'flex', flexDirection: 'column', gap: '16px', 
+            flexShrink: 0, overflowY: 'auto', overflowX: 'hidden',
+            position: 'sticky', top: 0
+          }}
+        >
           <div style={{
             display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px'
           }}>
@@ -1341,7 +1359,16 @@ const App = () => {
         </div>
 
         {/* Main Content */}
-        <div style={{ flex: 1, padding: '48px', overflowY: 'auto', backgroundColor: '#fafafa' }}>
+        <div 
+          ref={mainContentRef}
+          className="smooth-scroll"
+          style={{ 
+            flex: 1, padding: '48px', 
+            overflowY: 'auto', overflowX: 'hidden', 
+            backgroundColor: '#fafafa',
+            position: 'relative'
+          }}
+        >
           <div style={{
             display: 'flex', borderBottom: '1px solid #f0f0f0',
             marginBottom: '32px'

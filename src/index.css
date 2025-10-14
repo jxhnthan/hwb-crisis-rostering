@@ -29,10 +29,32 @@ code {
 ::-webkit-scrollbar-thumb {
   background: #d0d0d0;
   border-radius: 3px;
+  transition: background-color 0.2s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: #a0a0a0;
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: #808080;
+}
+
+/* Firefox scrollbar styling */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #d0d0d0 #f5f5f5;
+}
+
+/* Smooth scrolling for all elements */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Improve scrolling performance */
+.smooth-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
 }
 
 /* Smooth focus styles */
