@@ -1,0 +1,40 @@
+/* styles.css */
+@keyframes jiggle {
+    0% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    50% { transform: translateX(5px); }
+    75% { transform: translateX(-3px); }
+    100% { transform: translateX(0); }
+}
+
+.jiggle {
+  animation: jiggle 0.6s ease infinite;
+}
+
+/* Modern minimalistic design additions */
+.generated-text {
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+/* Smooth transitions for all interactive elements */
+* {
+  transition: all 0.15s ease;
+}
+
+/* Custom focus ring for better accessibility */
+.focus-visible {
+  outline: 2px solid #0ea5e9;
+  outline-offset: 2px;
+}
+
+/* Subtle hover effects */
+.hover-lift {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+  

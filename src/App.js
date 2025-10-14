@@ -13,9 +13,9 @@ const therapistGroups = [
   {
     role: "WBSP",
     therapists: [
-      "Soon Jiaying", "Kirsty Png", "Andrew Lim",
+      "Jiaying Soon", "Kirsty Png", "Andrew Lim",
       "Janice Leong", "Oliver Tan", "Claudia Ahl",
-      "Seanna Neo", "Xiao Hui"
+      "Seanna Neo", "XH Xiao"
     ]
   },
   {
@@ -120,49 +120,54 @@ const patchNotes = [
 // --- Styles ---
 const sectionHeadingStyle = {
   marginTop: 0,
-  marginBottom: '15px',
-  color: '#2D3748',
-  fontSize: '1.2rem',
-  fontWeight: '600',
-  paddingBottom: '10px',
-  borderBottom: '1px solid #E2E8F0'
+  marginBottom: '20px',
+  color: '#1a1a1a',
+  fontSize: '1.1rem',
+  fontWeight: '500',
+  paddingBottom: '12px',
+  borderBottom: '1px solid #f0f0f0',
+  letterSpacing: '-0.01em'
 };
 
 const cardStyle = {
-  backgroundColor: '#FFFFFF',
-  padding: '15px',
-  borderRadius: '8px',
-  boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-  marginBottom: '20px',
+  backgroundColor: '#ffffff',
+  padding: '20px',
+  borderRadius: '12px',
+  boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02)',
+  marginBottom: '24px',
+  border: '1px solid #f5f5f5'
 };
 
 const tabButtonStyle = {
-  padding: '12px 20px',
+  padding: '12px 24px',
   background: 'none',
   border: 'none',
   cursor: 'pointer',
-  fontSize: '1.1rem',
-  fontWeight: '600',
-  transition: 'color 0.2s, border-bottom 0.2s',
+  fontSize: '1rem',
+  fontWeight: '500',
+  transition: 'all 0.15s ease',
   flexGrow: 1,
   textAlign: 'center',
   outline: 'none',
+  borderRadius: '8px 8px 0 0',
 };
 
 const buttonStyle = {
-  padding: '10px 18px',
-  background: '#FFFFFF',
-  color: '#4A5568',
-  border: '1px solid #CBD5E0',
-  borderRadius: '6px',
+  padding: '8px 16px',
+  background: '#ffffff',
+  color: '#525252',
+  border: '1px solid #e5e5e5',
+  borderRadius: '8px',
   cursor: 'pointer',
   fontWeight: '500',
-  transition: 'background-color 0.2s, box-shadow 0.2s',
-  boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+  fontSize: '0.875rem',
+  transition: 'all 0.15s ease',
+  boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
+  outline: 'none'
 };
 
-const tableCellStyle = { border: '1px solid #E2E8F0', padding: '8px', textAlign: 'center' };
-const tableHeaderStyle = { ...tableCellStyle, backgroundColor: '#F7FAFC', fontWeight: '600', color: '#4A5568' };
+const tableCellStyle = { border: '1px solid #f0f0f0', padding: '12px 8px', textAlign: 'center', fontSize: '0.875rem' };
+const tableHeaderStyle = { ...tableCellStyle, backgroundColor: '#fafafa', fontWeight: '500', color: '#525252' };
 
 // --- Helper Functions for Data Compression/Decompression ---
 const compressData = (data) => {
@@ -233,42 +238,46 @@ const Therapist = React.memo(({ name }) => {
       ref={drag}
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'flex-start',
-        gap: '10px', padding: '8px 10px', margin: '0', width: '196px',
-        boxSizing: 'border-box', backgroundColor: 'transparent',
-        borderRadius: '8px', fontWeight: '500', color: '#4A5568',
-        border: '1px solid transparent', boxShadow: 'none', cursor: 'grab',
-        transition: 'background 0.2s, transform 0.1s, border-color 0.2s, box-shadow 0.2s',
+        gap: '8px', padding: '6px 8px', margin: '0', width: '100%',
+        boxSizing: 'border-box', backgroundColor: '#f8fafc',
+        borderRadius: '8px', fontWeight: '500', color: '#525252',
+        border: '1px solid #f0f0f0', cursor: 'grab',
+        transition: 'all 0.15s ease', fontSize: '0.8rem'
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.backgroundColor = '#F0F4F8';
-        e.currentTarget.style.transform = 'translateY(-2px)';
-        e.currentTarget.style.borderColor = '#CBD5E0';
-        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.08)';
+        e.currentTarget.style.backgroundColor = '#ffffff';
+        e.currentTarget.style.borderColor = '#e0e0e0';
+        e.currentTarget.style.boxShadow = '0 1px 4px rgba(0, 0, 0, 0.04)';
+        e.currentTarget.style.transform = 'translateY(-1px)';
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.backgroundColor = 'transparent';
-        e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.borderColor = 'transparent';
+        e.currentTarget.style.backgroundColor = '#f8fafc';
+        e.currentTarget.style.borderColor = '#f0f0f0';
         e.currentTarget.style.boxShadow = 'none';
+        e.currentTarget.style.transform = 'translateY(0)';
       }}
     >
       <div
         style={{
-          backgroundColor: color, color: 'white', borderRadius: '50%',
-          width: '32px', height: '32px', display: 'flex',
-          alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', flexShrink: 0,
+          backgroundColor: color, color: 'white', borderRadius: '6px',
+          width: '24px', height: '24px', display: 'flex',
+          alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', flexShrink: 0,
+          fontWeight: '600'
         }}
       >
         {initials}
       </div>
-      <span>{name}</span>
+      <span style={{ flex: 1, fontSize: '0.8rem' }}>{name}</span>
     </div>
   );
 });
 
-const CalendarDay = React.memo(({ day, moveTherapist, removeTherapist, isToday, isBlocked }) => {
+const CalendarDay = ({ day, moveTherapist, removeTherapist, isToday, isBlocked }) => {
   const isWeekend = day.date.getDay() === 0 || day.date.getDay() === 6;
   const finalBlockedStatus = isBlocked || isWeekend;
+
+  // Debug log to see if component is re-rendering with updated data
+  console.log(`CalendarDay ${day.dayKey} - therapists:`, day.therapists);
 
   const [{ isOver, canDrop }, drop] = useDrop(() => ({
     accept: 'THERAPIST',
@@ -286,25 +295,25 @@ const CalendarDay = React.memo(({ day, moveTherapist, removeTherapist, isToday, 
 
   const dayNumber = day.date.getDate();
 
-  let backgroundColor = '#FFFFFF';
-  let dayNumberColor = '#4A5568';
-  let borderColor = '#E2E8F0';
-  let boxShadow = '0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03)';
+  let backgroundColor = '#ffffff';
+  let dayNumberColor = '#525252';
+  let borderColor = '#f0f0f0';
+  let boxShadow = '0 1px 2px rgba(0, 0, 0, 0.03)';
 
   if (finalBlockedStatus) {
-    backgroundColor = '#F7FAFC';
-    dayNumberColor = '#A0AEC0';
+    backgroundColor = '#fafafa';
+    dayNumberColor = '#a0a0a0';
   }
   if (isToday) {
-    backgroundColor = '#E6FFFA';
-    dayNumberColor = '#2C7A7B';
-    borderColor = '#4FD1C5';
+    backgroundColor = '#f0f9ff';
+    dayNumberColor = '#0369a1';
+    borderColor = '#7dd3fc';
   }
 
   if (isOver && canDrop) {
-    backgroundColor = '#B2F5EA';
-    borderColor = '#3182CE';
-    boxShadow = '0 0 0 3px rgba(49, 130, 206, 0.4)';
+    backgroundColor = '#f0f9ff';
+    borderColor = '#0ea5e9';
+    boxShadow = '0 0 0 2px rgba(14, 165, 233, 0.3)';
   }
 
   return (
@@ -312,20 +321,20 @@ const CalendarDay = React.memo(({ day, moveTherapist, removeTherapist, isToday, 
       ref={drop}
       className={`CalendarDay_root ${isWeekend ? 'weekend-day' : ''}`}
       style={{
-        padding: '12px', minHeight: '160px', position: 'relative',
-        backgroundColor: backgroundColor, borderRadius: '6px',
+        padding: '16px', minHeight: '160px', position: 'relative',
+        backgroundColor: backgroundColor, borderRadius: '12px',
         boxShadow: boxShadow, display: 'flex', flexDirection: 'column',
-        gap: '10px', border: `1px solid ${borderColor}`,
-        transition: 'background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+        gap: '12px', border: `1px solid ${borderColor}`,
+        transition: 'all 0.15s ease',
         overflowY: 'auto',
       }}
     >
       <strong
         style={{
-          alignSelf: 'flex-end', fontSize: '0.9rem', color: dayNumberColor,
-          backgroundColor: isToday ? '#B2F5EA' : 'transparent',
-          borderRadius: isToday ? '50%' : '0', padding: isToday ? '3px 8px' : '0',
-          lineHeight: '1',
+          alignSelf: 'flex-end', fontSize: '0.875rem', color: dayNumberColor,
+          backgroundColor: isToday ? '#dbeafe' : 'transparent',
+          borderRadius: isToday ? '8px' : '0', padding: isToday ? '4px 8px' : '0',
+          lineHeight: '1', fontWeight: '500'
         }}
       >
         {dayNumber}
@@ -340,33 +349,69 @@ const CalendarDay = React.memo(({ day, moveTherapist, removeTherapist, isToday, 
             <div
               key={idx}
               style={{
-                display: 'flex', alignItems: 'center', gap: '12px',
-                padding: '8px 12px', backgroundColor: '#E6FFFA', color: '#234E52',
-                borderRadius: '8px', justifyContent: 'space-between',
-                fontWeight: '600', boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+                display: 'flex', alignItems: 'center', gap: '10px',
+                padding: '8px 12px', backgroundColor: '#f8fafc', color: '#334155',
+                borderRadius: '10px', justifyContent: 'space-between',
+                fontWeight: '500', boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                border: '1px solid #f1f5f9', position: 'relative',
+                cursor: 'default', // Disable drag cursor
+                userSelect: 'none' // Prevent text selection
               }}
+              onMouseDown={(e) => e.stopPropagation()}
+              onMouseUp={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+              onDragStart={(e) => e.preventDefault()} // Prevent drag start
+              draggable={false} // Explicitly disable dragging
             >
               <div
                 style={{
                   backgroundColor: therapistBlockColor, color: 'white',
-                  borderRadius: '50%', width: '40px', height: '40px',
+                  borderRadius: '8px', width: '32px', height: '32px',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '1.1rem', flexShrink: 0,
+                  fontSize: '0.875rem', flexShrink: 0, fontWeight: '600'
                 }}
               >
                 {initials}
               </div>
-              <span style={{ fontSize: '1.05rem', flexGrow: 1 }}>{therapist}</span>
+              <span style={{ fontSize: '0.875rem', flexGrow: 1 }}>{therapist}</span>
               <button
-                onClick={() => removeTherapist(therapist, day.dayKey)}
-                style={{
-                  marginLeft: '10px', color: '#E53E3E', cursor: 'pointer',
-                  background: 'transparent', border: 'none', fontWeight: 'bold',
-                  padding: '2px', lineHeight: '1', fontSize: '1.2rem', transition: 'color 0.2s',
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.nativeEvent.stopImmediatePropagation();
+                  console.log('Button clicked for removal'); // Debug log
+                  
+                  // Use setTimeout to ensure the click event is fully processed
+                  setTimeout(() => {
+                    removeTherapist(therapist, day.dayKey);
+                  }, 0);
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = '#C53030')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = '#E53E3E')}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.nativeEvent.stopImmediatePropagation();
+                }}
+                style={{
+                  marginLeft: '8px', color: '#ef4444', cursor: 'pointer',
+                  background: 'transparent', border: 'none', fontWeight: '500',
+                  padding: '6px', lineHeight: '1', fontSize: '1.1rem', transition: 'all 0.15s',
+                  borderRadius: '6px', width: '28px', height: '28px', display: 'flex', 
+                  alignItems: 'center', justifyContent: 'center', minWidth: '28px', minHeight: '28px',
+                  pointerEvents: 'auto', // Ensure button is clickable
+                  zIndex: 10 // Ensure button is above other elements
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = '#dc2626';
+                  e.currentTarget.style.backgroundColor = '#fef2f2';
+                  e.currentTarget.style.transform = 'scale(1.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = '#ef4444';
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
                 title={`Remove ${therapist}`}
+                type="button"
               >
                 ×
               </button>
@@ -376,8 +421,8 @@ const CalendarDay = React.memo(({ day, moveTherapist, removeTherapist, isToday, 
       ) : (
         !finalBlockedStatus && (
           <div style={{
-            fontSize: '0.85rem', color: '#A0AEC0', textAlign: 'center',
-            marginTop: 'auto', marginBottom: 'auto'
+            fontSize: '0.8rem', color: '#a0a0a0', textAlign: 'center',
+            marginTop: 'auto', marginBottom: 'auto', fontStyle: 'italic'
           }}>
             Empty
           </div>
@@ -385,17 +430,17 @@ const CalendarDay = React.memo(({ day, moveTherapist, removeTherapist, isToday, 
       )}
       {finalBlockedStatus && !isToday && (
         <div style={{
-          fontSize: '0.8rem', color: '#718096', textAlign: 'center',
-          marginTop: 'auto', marginBottom: 'auto'
+          fontSize: '0.8rem', color: '#a0a0a0', textAlign: 'center',
+          marginTop: 'auto', marginBottom: 'auto', fontStyle: 'italic'
         }}>
           {isWeekend && !isBlocked ? 'Weekend' : 'Blocked'}
         </div>
       )}
     </div>
   );
-});
+};
 
-const Calendar = React.memo(({ monthDays, moveTherapist, removeTherapist, todayDate, blockedDaysForYear }) => {
+const Calendar = ({ monthDays, moveTherapist, removeTherapist, todayDate, blockedDaysForYear }) => {
   const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const firstDayOfMonth = monthDays.length > 0 ? monthDays[0].date.getDay() : 0;
 
@@ -403,18 +448,19 @@ const Calendar = React.memo(({ monthDays, moveTherapist, removeTherapist, todayD
     <>
       <div style={{
         display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px',
-        marginTop: '20px', marginBottom: '8px', fontWeight: '600',
-        color: '#4A5568', textAlign: 'center',
+        marginTop: '24px', marginBottom: '12px', fontWeight: '500',
+        color: '#525252', textAlign: 'center', fontSize: '0.875rem',
+        padding: '0 4px'
       }}>
         {daysOfWeek.map(dayName => <div key={dayName}>{dayName}</div>)}
       </div>
 
       <div style={{
-        display: 'grid', gridTemplateColumns: 'repeat(7, minmax(150px, 1fr))', gap: '8px',
+        display: 'grid', gridTemplateColumns: 'repeat(7, minmax(160px, 1fr))', gap: '10px',
       }}>
         {Array.from({ length: firstDayOfMonth }).map((_, index) => (
           <div key={`empty-${index}`} style={{
-            backgroundColor: '#F7FAFC', borderRadius: '6px', minHeight: '160px',
+            backgroundColor: '#fafafa', borderRadius: '12px', minHeight: '160px',
           }} />
         ))}
         {monthDays.map((day) => {
@@ -422,7 +468,7 @@ const Calendar = React.memo(({ monthDays, moveTherapist, removeTherapist, todayD
           const isBlocked = blockedDaysForYear.includes(day.dayKey);
           return (
             <CalendarDay
-              key={day.dayKey}
+              key={`${day.dayKey}-${day.therapists.length}-${day.therapists.join(',')}`}
               day={day}
               moveTherapist={moveTherapist}
               removeTherapist={removeTherapist}
@@ -434,40 +480,63 @@ const Calendar = React.memo(({ monthDays, moveTherapist, removeTherapist, todayD
       </div>
     </>
   );
-});
+};
 
 const TherapistList = React.memo(({ therapistGroups, collapsedRoles, toggleCollapse }) => {
   return (
-    <div style={cardStyle}>
-      <h2 style={sectionHeadingStyle}>Therapists</h2>
-      <div style={{ paddingTop: '10px' }}>
+    <div style={{
+      backgroundColor: '#ffffff', padding: '16px', borderRadius: '12px',
+      border: '1px solid #f0f0f0', marginBottom: '0'
+    }}>
+      <h2 style={{
+        marginTop: '0', marginBottom: '12px', color: '#1a1a1a',
+        fontSize: '1rem', fontWeight: '600', letterSpacing: '-0.01em'
+      }}>
+        Therapists
+      </h2>
+      <div style={{ paddingTop: '0' }}>
         {therapistGroups.map((group) => (
-          <div key={group.role} style={{ marginBottom: '8px' }}>
+          <div key={group.role} style={{ marginBottom: '12px' }}>
             <button
               onClick={() => toggleCollapse(group.role)}
               style={{
-                background: 'transparent', border: 'none', padding: '6px 0',
-                fontSize: '1.1rem', fontWeight: '600', color: '#4A5568',
+                background: 'transparent', border: 'none', padding: '6px 8px',
+                fontSize: '0.875rem', fontWeight: '500', color: '#525252',
                 cursor: 'pointer', display: 'flex', alignItems: 'center',
                 width: '100%', textAlign: 'left', outline: 'none',
-                transition: 'color 0.2s ease, background-color 0.2s ease',
+                transition: 'all 0.15s ease', borderRadius: '6px',
+                marginBottom: '6px'
               }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F7FAFC'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#f8fafc';
+                e.currentTarget.style.color = '#1a1a1a';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = '#525252';
+              }}
             >
               <span style={{
-                marginRight: '8px', color: '#718096', fontSize: '1.1em',
-                fontWeight: 'bold', lineHeight: '1', width: '1em',
+                marginRight: '8px', color: '#a0a0a0', fontSize: '0.875rem',
+                fontWeight: '600', lineHeight: '1', width: '14px',
                 display: 'inline-block', textAlign: 'center',
+                backgroundColor: '#f0f0f0', borderRadius: '3px',
+                height: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center'
               }}>
-                {collapsedRoles[group.role] ? '+' : '-'}
+                {collapsedRoles[group.role] ? '+' : '−'}
               </span>
               {group.role}
+              <span style={{
+                marginLeft: 'auto', fontSize: '0.75rem', color: '#a0a0a0',
+                backgroundColor: '#f0f0f0', padding: '2px 6px', borderRadius: '10px'
+              }}>
+                {group.therapists.length}
+              </span>
             </button>
             {!collapsedRoles[group.role] && (
               <div style={{
-                display: 'flex', flexWrap: 'wrap', gap: '8px',
-                marginTop: '8px', paddingLeft: '20px',
+                display: 'flex', flexDirection: 'column', gap: '4px',
+                marginTop: '6px', paddingLeft: '22px',
               }}>
                 {group.therapists.map((name) => (
                   <Therapist key={name} name={name} />
@@ -483,44 +552,66 @@ const TherapistList = React.memo(({ therapistGroups, collapsedRoles, toggleColla
 
 const WFHTable = React.memo(({ therapists, workingFromHome, setWorkingFromHome }) => {
   return (
-    <div style={cardStyle}>
-      <h3 style={sectionHeadingStyle}>Set Blocked Days</h3>
-      <div style={{ overflowX: 'auto' }}> {/* Add this wrapper div */}
-        <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: '0.9rem' }}>
-          <thead>
-            <tr>
-              <th style={tableHeaderStyle}>Therapist</th>
-              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map((day) => (
-                <th key={day} style={tableHeaderStyle}>{day}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {therapists.map((therapist) => (
-              <tr key={therapist}>
-                <td style={{ ...tableCellStyle, textAlign: 'left', fontWeight: '500' }}>{therapist}</td>
-                {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => (
-                  <td key={day} style={tableCellStyle}>
+    <div style={{
+      backgroundColor: '#ffffff', padding: '16px', borderRadius: '12px',
+      border: '1px solid #f0f0f0', marginBottom: '0'
+    }}>
+      <h3 style={{
+        marginTop: '0', marginBottom: '12px', color: '#1a1a1a',
+        fontSize: '1rem', fontWeight: '600', letterSpacing: '-0.01em'
+      }}>
+        Work From Home Days
+      </h3>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        {therapists.map((therapist) => (
+          <div key={therapist} style={{
+            display: 'flex', alignItems: 'center', gap: '12px',
+            padding: '8px 12px', backgroundColor: '#f8fafc',
+            borderRadius: '8px', border: '1px solid #f0f0f0'
+          }}>
+            <div style={{
+              minWidth: '80px', fontSize: '0.875rem', fontWeight: '500',
+              color: '#1a1a1a', flexShrink: 0
+            }}>
+              {therapist.split(' ')[0]}
+            </div>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map((dayAbbr, index) => {
+                const fullDay = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'][index];
+                const isChecked = workingFromHome[therapist]?.[fullDay] || false;
+                return (
+                  <label key={dayAbbr} style={{
+                    display: 'flex', alignItems: 'center', gap: '4px',
+                    fontSize: '0.75rem', cursor: 'pointer',
+                    padding: '4px 8px', borderRadius: '6px',
+                    backgroundColor: isChecked ? '#dbeafe' : 'transparent',
+                    color: isChecked ? '#1e40af' : '#525252',
+                    transition: 'all 0.15s ease'
+                  }}>
                     <input
                       type="checkbox"
-                      style={{ cursor: 'pointer' }}
-                      checked={workingFromHome[therapist]?.[day] || false}
+                      checked={isChecked}
                       onChange={() =>
                         setWorkingFromHome((prev) => ({
                           ...prev,
                           [therapist]: {
                             ...prev[therapist],
-                            [day]: !prev[therapist]?.[day],
+                            [fullDay]: !prev[therapist]?.[fullDay],
                           },
                         }))
                       }
+                      style={{ 
+                        cursor: 'pointer', accentColor: '#0ea5e9',
+                        transform: 'scale(0.8)'
+                      }}
                     />
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                    {dayAbbr}
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -548,52 +639,62 @@ const AssignmentTracker = React.memo(({ therapists, assignmentCounts, averageShi
   }, [therapists, assignmentCounts]);
 
   return (
-    <div style={cardStyle}>
-      <h3 style={sectionHeadingStyle}>Shift Tracker</h3>
+    <div style={{
+      backgroundColor: '#ffffff', padding: '16px', borderRadius: '12px',
+      border: '1px solid #f0f0f0', marginBottom: '0'
+    }}>
       <div style={{
-        fontSize: '0.9rem', color: '#718096', marginBottom: '15px', textAlign: 'center'
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        marginBottom: '12px'
       }}>
-        Monthly Average: <strong>{averageShiftsPerTherapist}</strong> shifts per therapist
-      </div>
-      <div style={{ overflowX: 'auto' }}>
-        <div style={{
-          // Change this line to define a fixed 3-column grid
-          display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px',
+        <h3 style={{
+          margin: '0', color: '#1a1a1a', fontSize: '1rem', fontWeight: '600',
+          letterSpacing: '-0.01em'
         }}>
-          {sortedTherapists.map((therapist) => {
-            const count = assignmentCounts[therapist] || 0;
-            const assignmentColor = getColorForAssignmentCount(count);
-            const therapistWfhDays = Object.entries(workingFromHome[therapist] || {})
-              .filter(([, isWfh]) => isWfh)
-              .map(([day]) => day.substring(0, 3));
-            return (
-              <div
-                key={therapist}
-                style={{
-                  padding: '12px', backgroundColor: '#F7FAFC', color: '#234E52',
-                  borderRadius: '6px', fontSize: '0.9rem',
-                  border: `1px solid ${assignmentColor}`, boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-                  display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
-                  gap: '6px', position: 'relative'
-                }}
-              >
-                <strong style={{ display: 'block' }}>{therapist}</strong>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span>Assigned: {count}</span>
-                  <span style={{
-                    width: '10px', height: '10px', borderRadius: '50%',
-                    backgroundColor: assignmentColor, display: 'inline-block', flexShrink: 0,
-                  }} title={`Assignment Status: ${count} shifts`}></span>
-                </div>
-                {therapistWfhDays.length > 0 && (
-                  <div style={{ fontSize: '0.8rem', color: '#718096' }}>
-                    WFH: {therapistWfhDays.join(', ')}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+          Shift Tracker
+        </h3>
+        <div style={{
+          fontSize: '0.75rem', color: '#a0a0a0', backgroundColor: '#f8fafc',
+          padding: '4px 8px', borderRadius: '6px', border: '1px solid #f0f0f0'
+        }}>
+          Avg: {averageShiftsPerTherapist}
         </div>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        {sortedTherapists.map((therapist) => {
+          const count = assignmentCounts[therapist] || 0;
+          const assignmentColor = getColorForAssignmentCount(count);
+          const therapistWfhDays = Object.entries(workingFromHome[therapist] || {})
+            .filter(([, isWfh]) => isWfh)
+            .map(([day]) => day.substring(0, 3));
+          return (
+            <div
+              key={therapist}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '8px 12px', backgroundColor: '#f8fafc',
+                borderRadius: '8px', border: '1px solid #f0f0f0'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{
+                  width: '8px', height: '8px', borderRadius: '50%',
+                  backgroundColor: assignmentColor, flexShrink: 0,
+                }} title={`Assignment Status: ${count} shifts`}></span>
+                <span style={{ fontSize: '0.875rem', fontWeight: '500', color: '#1a1a1a' }}>
+                  {therapist.split(' ')[0]}
+                </span>
+              </div>
+              <span style={{
+                fontSize: '0.75rem', fontWeight: '600', color: '#525252',
+                backgroundColor: '#ffffff', padding: '2px 6px', borderRadius: '4px',
+                border: '1px solid #e0e0e0'
+              }}>
+                {count}
+              </span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -601,11 +702,11 @@ const AssignmentTracker = React.memo(({ therapists, assignmentCounts, averageShi
 
 const CalendarControls = React.memo(({ currentYear, currentMonth, liveDateTime, setCurrentYear, changeMonth }) => {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
-      <h2 style={{ color: '#1A202C', margin: 0, fontSize: '1.5rem' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+      <h2 style={{ color: '#1a1a1a', margin: 0, fontSize: '1.75rem', fontWeight: '500', letterSpacing: '-0.02em' }}>
         {new Date(currentYear, currentMonth, 1).toLocaleString("default", { month: "long" })} {currentYear}
-        <span className="generated-text" style={{ fontSize: '0.8em', color: '#666', marginLeft: '15px' }}>
-          (Generated: {liveDateTime})
+        <span className="generated-text" style={{ fontSize: '0.75rem', color: '#a0a0a0', marginLeft: '12px', fontWeight: '400' }}>
+          Generated: {liveDateTime}
         </span>
       </h2>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -613,8 +714,9 @@ const CalendarControls = React.memo(({ currentYear, currentMonth, liveDateTime, 
           value={currentYear}
           onChange={(e) => setCurrentYear(parseInt(e.target.value))}
           style={{
-            padding: '10px 14px', border: '1px solid #CBD5E0', borderRadius: '6px',
-            backgroundColor: '#FFFFFF', fontSize: '1rem', cursor: 'pointer', outline: 'none',
+            padding: '8px 12px', border: '1px solid #e0e0e0', borderRadius: '8px',
+            backgroundColor: '#ffffff', fontSize: '0.875rem', cursor: 'pointer', outline: 'none',
+            color: '#525252', fontWeight: '500'
           }}
         >
           <option value={2025}>2025</option>
@@ -622,10 +724,10 @@ const CalendarControls = React.memo(({ currentYear, currentMonth, liveDateTime, 
         </select>
         <button
           type="button"
-          style={{ ...buttonStyle, marginRight: '10px' }}
+          style={{ ...buttonStyle, marginRight: '8px' }}
           onClick={() => changeMonth('prev')}
-          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}
+          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f8fafc'; e.currentTarget.style.borderColor = '#d0d0d0'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#ffffff'; e.currentTarget.style.borderColor = '#e5e5e5'; }}
         >
           ← Previous
         </button>
@@ -633,8 +735,8 @@ const CalendarControls = React.memo(({ currentYear, currentMonth, liveDateTime, 
           type="button"
           style={buttonStyle}
           onClick={() => changeMonth('next')}
-          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F0F4F8'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}
+          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f8fafc'; e.currentTarget.style.borderColor = '#d0d0d0'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#ffffff'; e.currentTarget.style.borderColor = '#e5e5e5'; }}
         >
           Next →
         </button>
@@ -647,49 +749,51 @@ const ActionButtons = React.memo(({ goToToday, autoRoster, resetCalendar, saveAs
 
   // New, standardized style objects
   const buttonStyle = {
-    padding: '10px 18px',
-    borderRadius: '6px',
+    padding: '8px 16px',
+    borderRadius: '8px',
     cursor: 'pointer',
     fontWeight: '500',
-    transition: 'background-color 0.2s, color 0.2s, border 0.2s',
-    boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+    fontSize: '0.875rem',
+    transition: 'all 0.15s ease',
+    boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
     border: '1px solid',
+    outline: 'none'
   };
 
   const primaryBtn = {
     ...buttonStyle,
-    backgroundColor: '#3182CE', // Blue
+    backgroundColor: '#0ea5e9', // Blue
     color: 'white',
-    borderColor: '#3182CE',
-    onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#2B6CB0',
-    onMouseLeave: (e) => e.currentTarget.style.backgroundColor = '#3182CE',
+    borderColor: '#0ea5e9',
+    onMouseEnter: (e) => { e.currentTarget.style.backgroundColor = '#0284c7'; e.currentTarget.style.borderColor = '#0284c7'; },
+    onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = '#0ea5e9'; e.currentTarget.style.borderColor = '#0ea5e9'; },
   };
 
   const dangerBtn = {
     ...buttonStyle,
-    backgroundColor: '#E53E3E', // Red
+    backgroundColor: '#ef4444', // Red
     color: 'white',
-    borderColor: '#E53E3E',
-    onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#C53030',
-    onMouseLeave: (e) => e.currentTarget.style.backgroundColor = '#E53E3E',
+    borderColor: '#ef4444',
+    onMouseEnter: (e) => { e.currentTarget.style.backgroundColor = '#dc2626'; e.currentTarget.style.borderColor = '#dc2626'; },
+    onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = '#ef4444'; e.currentTarget.style.borderColor = '#ef4444'; },
   };
 
   const successBtn = {
     ...buttonStyle,
-    backgroundColor: '#38A169', // Green
+    backgroundColor: '#10b981', // Green
     color: 'white',
-    borderColor: '#38A169',
-    onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#2F855A',
-    onMouseLeave: (e) => e.currentTarget.style.backgroundColor = '#38A169',
+    borderColor: '#10b981',
+    onMouseEnter: (e) => { e.currentTarget.style.backgroundColor = '#059669'; e.currentTarget.style.borderColor = '#059669'; },
+    onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = '#10b981'; e.currentTarget.style.borderColor = '#10b981'; },
   };
 
   const neutralBtn = {
     ...buttonStyle,
-    backgroundColor: '#F7FAFC', // Light Gray
-    color: '#4A5568',
-    borderColor: '#CBD5E0',
-    onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#EDF2F7',
-    onMouseLeave: (e) => e.currentTarget.style.backgroundColor = '#F7FAFC',
+    backgroundColor: '#ffffff', // Light Gray
+    color: '#525252',
+    borderColor: '#e5e5e5',
+    onMouseEnter: (e) => { e.currentTarget.style.backgroundColor = '#f8fafc'; e.currentTarget.style.borderColor = '#d0d0d0'; },
+    onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = '#ffffff'; e.currentTarget.style.borderColor = '#e5e5e5'; },
   };
 
   return (
@@ -761,21 +865,23 @@ const ActionButtons = React.memo(({ goToToday, autoRoster, resetCalendar, saveAs
 
 const PatchNotesSection = React.memo(({ patchNotes }) => {
   return (
-    <div style={{ padding: '0px 10px' }}>
-      <h2 style={{ marginTop: 0, marginBottom: '20px', color: '#1A202C', fontSize: '1.5rem' }}>Application Patch Notes</h2>
+    <div style={{ padding: '0px 12px' }}>
+      <h2 style={{ marginTop: 0, marginBottom: '24px', color: '#1a1a1a', fontSize: '1.5rem', fontWeight: '500', letterSpacing: '-0.02em' }}>Application Patch Notes</h2>
       {patchNotes.map((patch, index) => (
-        <div key={index} style={{ marginBottom: '25px', paddingBottom: '15px', borderBottom: '1px dashed #E2E8F0' }}>
-          <h3 style={{ margin: '0 0 8px 0', color: '#2D3748', fontSize: '1.2rem' }}>
-            Version {patch.version} <span style={{ fontSize: '0.85em', color: '#718096', fontWeight: 'normal' }}>({patch.date})</span>
+        <div key={index} style={{ marginBottom: '32px', paddingBottom: '20px', borderBottom: '1px solid #f0f0f0' }}>
+          <h3 style={{ margin: '0 0 12px 0', color: '#1a1a1a', fontSize: '1.1rem', fontWeight: '500' }}>
+            Version {patch.version} <span style={{ fontSize: '0.8rem', color: '#a0a0a0', fontWeight: '400' }}>({patch.date})</span>
           </h3>
-          <ul style={{ listStyleType: 'disc', paddingLeft: '25px', margin: 0 }}>
+          <ul style={{ listStyleType: 'none', paddingLeft: '0', margin: 0 }}>
             {patch.changes.map((change, i) => (
-              <li key={i} style={{ marginBottom: '5px', color: '#4A5568', lineHeight: '1.4' }}>{change}</li>
+              <li key={i} style={{ marginBottom: '8px', color: '#525252', lineHeight: '1.5', paddingLeft: '16px', position: 'relative' }}>
+                <span style={{ position: 'absolute', left: '0', color: '#d0d0d0' }}>•</span>{change}
+              </li>
             ))}
           </ul>
         </div>
       ))}
-      <p style={{ fontSize: '0.9rem', color: '#718096', textAlign: 'center', marginTop: '30px' }}>End of Patch Notes.</p>
+      <p style={{ fontSize: '0.875rem', color: '#a0a0a0', textAlign: 'center', marginTop: '40px', fontStyle: 'italic' }}>End of Patch Notes.</p>
     </div>
   );
 });
@@ -808,13 +914,13 @@ const App = () => {
     {
       "Dominic Yeo": { Monday: false, Tuesday: false, Wednesday: true, Thursday: false, Friday: false },
       "Kirsty Png": { Monday: false, Tuesday: false, Wednesday: true, Thursday: false, Friday: false },
-      "Soon Jiaying": { Monday: false, Tuesday: false, Wednesday: false, Thursday: false, Friday: true },
+      "Jiaying Soon": { Monday: false, Tuesday: false, Wednesday: false, Thursday: false, Friday: true },
       "Andrew Lim": { Monday: false, Tuesday: false, Wednesday: false, Thursday: false, Friday: true },
       "Janice Leong": { Monday: false, Tuesday: false, Wednesday: true, Thursday: false, Friday: false },
       "Oliver Tan": { Monday: false, Tuesday: true, Wednesday: false, Thursday: false, Friday: false },
       "Claudia Ahl": { Monday: false, Tuesday: false, Wednesday: false, Thursday: true, Friday: false },
       "Seanna Neo": { Monday: false, Tuesday: true, Wednesday: false, Thursday: false, Friday: false },
-      "Xiao Hui": { Monday: false, Tuesday: false, Wednesday: false, Thursday: true, Friday: false },
+      "XH Xiao": { Monday: false, Tuesday: false, Wednesday: false, Thursday: true, Friday: false },
     }
   );
 
@@ -910,19 +1016,52 @@ const App = () => {
   }, []);
 
   const removeTherapist = useCallback((therapistName, dayKey) => {
+    console.log('=== REMOVE THERAPIST DEBUG ===');
+    console.log('Removing therapist:', therapistName, 'from day:', dayKey);
+    console.log('Current year/month:', currentYear, currentMonth);
+    
     setCalendarData(prevData => {
+      console.log('Previous calendar data:', prevData);
       const newData = { ...prevData };
       const [year, month, day] = dayKey.split('-').map(Number);
+      console.log('Parsed date parts:', { year, month, day });
+      
       const targetDay = newData[year][month - 1].find(d => d.dayKey === dayKey);
+      console.log('Target day found:', targetDay);
 
       if (targetDay) {
-        targetDay.therapists = targetDay.therapists.filter(
+        console.log('Before removal - targetDay.therapists:', targetDay.therapists);
+        const beforeLength = targetDay.therapists.length;
+        
+        // Create a new array instead of mutating the existing one
+        const newTherapists = targetDay.therapists.filter(
           (therapist) => therapist !== therapistName
         );
+        
+        // Create a new day object instead of mutating
+        const updatedDay = {
+          ...targetDay,
+          therapists: newTherapists
+        };
+        
+        // Replace the day in the month array
+        const monthIndex = month - 1;
+        newData[year][monthIndex] = newData[year][monthIndex].map(d => 
+          d.dayKey === dayKey ? updatedDay : d
+        );
+        
+        const afterLength = newTherapists.length;
+        console.log('After removal - newTherapists:', newTherapists);
+        console.log('Removal result - before:', beforeLength, 'after:', afterLength);
+      } else {
+        console.error('Target day not found!');
       }
+      
+      console.log('New calendar data:', newData);
+      console.log('=== END REMOVE DEBUG ===');
       return newData;
     });
-  }, []);
+  }, [currentYear, currentMonth]);
 
   const changeMonth = useCallback((direction) => {
     setCurrentMonth(prevMonth => {
@@ -1146,28 +1285,37 @@ const App = () => {
   return (
     <DndProvider backend={HTML5Backend}>
       <div style={{
-        display: 'flex', minHeight: '100vh', backgroundColor: '#F0F4F8',
-        fontFamily: "'Inter', sans-serif"
+        display: 'flex', minHeight: '100vh', backgroundColor: '#fafafa',
+        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
       }}>
         <ToastContainer />
         {/* Left Sidebar */}
         <div style={{
-          width: '320px', padding: '20px', borderRight: '1px solid #E2E8F0',
-          backgroundColor: '#F7FAFC', display: 'flex', flexDirection: 'column',
-          alignItems: 'center', gap: '20px', flexShrink: 0
+          width: '320px', padding: '20px', borderRight: '1px solid #f0f0f0',
+          backgroundColor: '#ffffff', display: 'flex', flexDirection: 'column',
+          gap: '16px', flexShrink: 0, overflowY: 'auto'
         }}>
-<h1 style={{
-  color: '#2D3748', // A softer, more professional dark gray
-  fontSize: '1.6rem', // Slightly smaller for a less imposing feel
-  fontWeight: '600', // Still bold, but not as heavy
-  margin: '0',
-  textAlign: 'center',
-}}>
-  SWEE Roster
-</h1>
           <div style={{
-            width: '100%', display: 'flex', flexDirection: 'column', gap: '20px',
-            flexGrow: 1
+            display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px'
+          }}>
+            <div style={{
+              width: '32px', height: '32px', backgroundColor: '#0ea5e9',
+              borderRadius: '8px', display: 'flex', alignItems: 'center',
+              justifyContent: 'center', color: 'white', fontWeight: '600',
+              fontSize: '1rem'
+            }}>
+              S
+            </div>
+            <h1 style={{
+              color: '#1a1a1a', fontSize: '1.25rem', fontWeight: '600',
+              margin: '0', letterSpacing: '-0.02em'
+            }}>
+              SWEE Roster
+            </h1>
+          </div>
+          
+          <div style={{
+            width: '100%', display: 'flex', flexDirection: 'column', gap: '16px'
           }}>
             <TherapistList
               therapistGroups={therapistGroups}
@@ -1193,17 +1341,17 @@ const App = () => {
         </div>
 
         {/* Main Content */}
-        <div style={{ flex: 1, padding: '40px', overflowY: 'auto' }}>
+        <div style={{ flex: 1, padding: '48px', overflowY: 'auto', backgroundColor: '#fafafa' }}>
           <div style={{
-            display: 'flex', borderBottom: '2px solid #E2E8F0',
-            marginBottom: '30px'
+            display: 'flex', borderBottom: '1px solid #f0f0f0',
+            marginBottom: '32px'
           }}>
             <button
               onClick={() => setActiveTab('calendar')}
               style={{
                 ...tabButtonStyle,
-                color: activeTab === 'calendar' ? '#3182CE' : '#718096',
-                borderBottom: activeTab === 'calendar' ? '3px solid #3182CE' : '3px solid transparent'
+                color: activeTab === 'calendar' ? '#0ea5e9' : '#a0a0a0',
+                borderBottom: activeTab === 'calendar' ? '2px solid #0ea5e9' : '2px solid transparent'
               }}
             >
               Calendar
@@ -1212,8 +1360,8 @@ const App = () => {
               onClick={() => setActiveTab('patch-notes')}
               style={{
                 ...tabButtonStyle,
-                color: activeTab === 'patch-notes' ? '#3182CE' : '#718096',
-                borderBottom: activeTab === 'patch-notes' ? '3px solid #3182CE' : '3px solid transparent'
+                color: activeTab === 'patch-notes' ? '#0ea5e9' : '#a0a0a0',
+                borderBottom: activeTab === 'patch-notes' ? '2px solid #0ea5e9' : '2px solid transparent'
               }}
             >
               Patch Notes
