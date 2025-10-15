@@ -13,15 +13,15 @@ const therapistGroups = [
   {
     role: "WBSP",
     therapists: [
-      "Jiaying Soon", "Kirsty Png", "Andrew Lim",
-      "Janice Leong", "Oliver Tan", "Claudia Ahl",
-      "Seanna Neo", "XH Xiao"
+      "Jiaying", "Kirsty", "Andrew",
+      "Janice", "Oliver", "Claudia",
+      "Seanna", "Xiao Hui"
     ]
   },
   {
     role: "Care Manager",
     therapists: [
-      "Dominic Yeo"
+      "Dominic"
     ]
   }
 ];
